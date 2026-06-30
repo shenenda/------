@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>更多内容</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 5px 40px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            height: 70px;
+        }
+
+        .home-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #ff416c;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(255, 65, 108, 0.3);
+            text-decoration: none;
+        }
+
+        .home-button img {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            filter: brightness(0) invert(1);
+        }
+
+        .main {
+            margin-top: 120px;
+            padding: 0 20px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .main h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .main p {
+            font-size: 18px;
+            color: #555;
+            line-height: 1.8;
+            margin: 10px 0;
+            text-align: left;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
+
+        .main p a {
+            color: #ff416c;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .main p a:hover {
+            text-decoration: underline;
+            color: #ff2650;
+        }
+
+         /* 响应式设计 */
+         @media (max-width: 768px) {
+            .container {
+                width: 70%; /* 让内容适配手机屏幕 */
+                padding: 15px;
+                margin-top: 120px;
+                transform: translateY(0); /* 调整为自然对齐 */
+            }
+
+            .tabs button {
+                font-size: 14px; /* 缩小选项卡字体 */
+            }
+
+            .form input, .code-container input, .password-container input {
+                font-size: 12px; /* 缩小输入框字体 */
+            }
+
+            .form .submit-btn {
+                font-size: 14px; /* 缩小按钮字体 */
+                padding: 8px 15px;
+            }
+
+            .form .terms {
+                font-size: 10px;
+            }
+
+            .main h1 {
+                font-size: 24px;
+            }
+            .main p {
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                height: 60px;
+            }
+
+            .home-button {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            .main h1 {
+                font-size: 20px;
+            }
+            .main p {
+                font-size: 14px;
+            }
+            
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/welcome.html" class="home-button">
+            <img src="https://img.icons8.com/?size=100&id=Q1xkcFuVON39&format=png&color=000000" alt="home icon">
+            返回
+        </a>
+    </div>
+    <div class="main">
+        <h1>更多内容和项目源码请见</h1>
+        <p>我的 Github：<a href="https://github.com/bhu619" target="_blank">https://github.com/bhu619</a></p>
+        <p>我的 CSDN：<a href="https://blog.csdn.net/Teriri_?type=blog" target="_blank">https://blog.csdn.net/Teriri_?type=blog</a></p>
+        <p>Webserver 项目解读 / 代码分析 / 改进：<a href="https://www.yuque.com/u39624144/zvaea9/aqktb26g923rsiv5" target="_blank">https://www.yuque.com/u39624144/zvaea9/aqktb26g923rsiv5</a></p>
+        <p>《Linux 高性能服务器编程》总结：<a href="https://blog.csdn.net/teriri_/category_12760091.html" target="_blank">https://blog.csdn.net/teriri_/category_12760091.html</a></p>
+    </div>
+</body>
+</html>
