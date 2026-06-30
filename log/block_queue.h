@@ -25,11 +25,11 @@ public:
             exit(-1);
         }
 
-        m_max_size = max_size;
-        m_array = new T[max_size];
-        m_size = 0;
-        m_front = -1;
-        m_back = -1;
+        m_max_size = max_size;      //最大元素个数
+        m_array = new T[max_size];  //数组
+        m_size = 0;                //当前元素个数
+        m_front = -1;              //队首元素索引
+        m_back = -1;               //队尾元素索引
     }
 
     void clear()
