@@ -60,6 +60,7 @@ void connection_pool::init(string url, string User, string PassWord, string DBNa
 
 		connList.push_back(con);				/* 将连接加入连接池 */
 		++m_FreeConn;							/* 增加空闲连接计数 */
+		reserve.post();							/* reserve 默认信号量值为 0；每成功创建一个连接就 post 一次，使信号量数量和空闲连接数保持一致 */
 	}
 
 	/* 如果没有任何连接被成功创建 */ 
@@ -69,7 +70,6 @@ void connection_pool::init(string url, string User, string PassWord, string DBNa
         exit(1);  								/* 没有连接被创建成功，退出程序 */
     }
 
-	reserve = sem(m_FreeConn);					/* 初始化信号量，用于管理空闲连接的数量 */
 	m_MaxConn = m_FreeConn;						/* 设置最大连接数 */
 }
 

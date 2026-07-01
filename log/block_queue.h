@@ -7,7 +7,7 @@
 #define BLOCK_QUEUE_H
 
 #include <iostream>
-#include <stdlib.h>
+#include <stdlib.h>              //C语言通用工具库头文件：有malloc、free、exit等函数
 #include <pthread.h>
 #include <sys/time.h>
 #include "../lock/locker.h"

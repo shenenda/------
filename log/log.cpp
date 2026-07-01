@@ -57,12 +57,12 @@ bool Log::init(const char *file_name, int close_log, int log_buf_size, int split
     const bool use_async = max_queue_size >= 1; /* 队列长度大于等于 1，说明使用异步日志模式 */
     m_close_log = close_log;                    /* 保存日志开关，0 表示开启日志，1 表示关闭日志 */
     m_log_buf_size = log_buf_size;              /* 保存日志缓冲区大小，后面格式化日志时要用 */
-    m_buf = new char[m_log_buf_size];       /* 用于日志的缓存，在初始化时分配缓冲区的大小 */
-    memset(m_buf, '\0', m_log_buf_size);    /* 把缓冲区清零*/
-    m_split_lines = split_lines;            /* 当日志文件的行数达到 m_split_lines 的值时，程序会自动创建一个新的日志文件以继续记录，避免单个日志文件过大 */
+    m_buf = new char[m_log_buf_size];           /* 用于日志的缓存，在初始化时分配缓冲区的大小 */
+    memset(m_buf, '\0', m_log_buf_size);        /* 把缓冲区清零*/
+    m_split_lines = split_lines;                /* 当日志文件的行数达到 m_split_lines 的值时，程序会自动创建一个新的日志文件以继续记录，避免单个日志文件过大 */
 
-    time_t t = time(NULL);                  /* 获取当前的系统时间，返回的是从 1970 年 1 月 1 日（即 Unix 纪元）到现在的秒数 */
-    struct tm my_tm;                        /* 包含了当前的本地时间信息 */
+    time_t t = time(NULL);                      /* 获取当前的系统时间，返回的是从 1970 年 1 月 1 日（即 Unix 纪元）到现在的秒数 */
+    struct tm my_tm;                            /* 包含了当前的本地时间信息 */
     /*
         localtime_r 是 localtime 的线程安全版本：
         它把转换后的本地时间写入 my_tm，而不是返回一个共享的静态缓冲区。
@@ -112,7 +112,7 @@ bool Log::init(const char *file_name, int close_log, int log_buf_size, int split
     if (use_async)
     {
         m_log_queue = new block_queue<string>(max_queue_size); /* 异步模式下，先创建生产者-消费者之间的阻塞队列 */
-        pthread_t tid;                                      /* pthread_t 用来保存新创建线程的线程 id */
+        pthread_t tid;                                         /* pthread_t 用来保存新创建线程的线程 id */
 
         if (pthread_create(&tid, NULL, flush_log_thread, NULL) != 0)
         {
@@ -126,13 +126,15 @@ bool Log::init(const char *file_name, int close_log, int log_buf_size, int split
             return false;
         }
 
-        pthread_detach(tid); /* 分离线程：线程退出后由系统自动回收线程资源，不需要主线程 pthread_join */
+        pthread_detach(tid); /* 分离线程：线程退出后由系统自动回收线程自身的资源，不需要主线程 pthread_join */
         m_is_async = true;   /* 线程创建成功后再标记为异步模式，避免初始化失败时状态不一致 */
-        /*
+        /* 这里的问题实际上不是detach后为什么还要join来回收资源；而是释放log的成员资源前，怎么确保后台线程已经彻底不再使用他们
+
          * 注意：分离线程本身不是错误，但这里没有配套的停止标志、唤醒机制和 join 等待。
          * 后台日志线程会一直在 async_write_log() 中访问 m_log_queue 和 m_fp。
          * 如果要彻底修正，应保存线程 id，增加退出标志，通知阻塞队列醒来，
          * 再 join 等线程结束后释放队列和关闭文件；这属于日志线程生命周期改造。
+         * 这个join 是等待线程真的结束之后，能保证它不再访问外部资源
          */
     }
 
