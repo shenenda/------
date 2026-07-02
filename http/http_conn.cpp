@@ -25,8 +25,8 @@ map<string, string> users;
 void http_conn::initmysql_result(connection_pool *connPool) {
 
     /* 从连接池中获取连接，并用 RAII 保证函数退出时自动归还 */
-    MYSQL *mysql = nullptr;
-    connectionRAII mysqlcon(&mysql, connPool); //mysql 是临时借用指针，不拥有连接；mysqlcon 析构时会把连接还给连接池并把 mysql 置空
+    MYSQL *mysql = nullptr; //定义一个空的数据库连接裸指针，作为输出型参数，用来接收从连接池取出的连接地址
+    connectionRAII mysqlcon(&mysql, connPool); //构造一个 RAII 守卫对象 mysqlcon   mysql 是临时借用指针，不拥有连接；mysqlcon 析构时会把连接还给连接池并把 mysql 置空
     if (!mysql) {
         LOG_ERROR("Failed to get a valid MySQL connection");
         return;
@@ -34,7 +34,7 @@ void http_conn::initmysql_result(connection_pool *connPool) {
 
     /* 执行sql查询: 在user表中检索username，passwd数据 */
     const char* query = "SELECT username,passwd FROM user";
-    if (mysql_query(mysql, query)) {
+    if (mysql_query(mysql, query)) { //mysql_query(已建立的数据库连接句柄， 要执行的SQL语句字符串) 返回0表示成功，否则返回非0值
         LOG_ERROR("SELECT error: %s\n", mysql_error(mysql));
         return;
     }
@@ -59,7 +59,7 @@ void http_conn::initmysql_result(connection_pool *connPool) {
         数组的每个元素包含了一个字段（列）的元数据信息，如字段名称、数据类型、长度等 */
     MYSQL_FIELD *fields = mysql_fetch_fields(result);
 
-    MYSQL_ROW row;
+    MYSQL_ROW row; //MYSQL_ROW 本质是 char** 类型（字符串数组），每一个元素对应一行中的一列数据
     /* 使用 mysql_fetch_row 从结果集中逐行读取用户名和密码 */
     while ((row = mysql_fetch_row(result))) {
         if (row[0] && row[1]) {

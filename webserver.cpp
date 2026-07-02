@@ -110,6 +110,7 @@ void WebServer::sql_pool()
     m_connPool->init("localhost", m_user, m_passWord, m_databaseName, 3306, m_sql_num, m_close_log);
 
     /* 初始化数据库读取表 */
+    /* 为什么要预加载到内存： 登录是高频请求，如果每次登录都查数据库，数据库会成为性能瓶颈。预加载到内存后，登录校验是 O (1) 级别的内存查找，并发性能提升非常明显，属于典型的空间换时间。*/
     users->initmysql_result(m_connPool);
 }
 
