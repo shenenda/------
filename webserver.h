@@ -60,9 +60,9 @@ public:
 
     int m_pipefd[2];                /* 用于进程间通信的管道文件描述符 */
     int m_epollfd;                  /* epoll 文件描述符 */
-    http_conn *users;               /* HTTP 连接对象数组 */
+    http_conn *users;               /* HTTP 连接对象数组 users 是一个指向 http_conn 对象数组的指针，数组里的每一个元素对应一个和服务器建立了 TCP 连接的客户端，用来集中管理所有并发连接的全部状态 */
 
-    connection_pool *m_connPool;    /* 数据库连接池 */
+    connection_pool *m_connPool;    /* 数据库连接池对象的指针 */
     string m_user;                  /* 登陆数据库用户名 */
     string m_passWord;              /* 登陆数据库密码 */
     string m_databaseName;          /* 使用数据库名 */
@@ -75,7 +75,7 @@ public:
     epoll_event events[MAX_EVENT_NUMBER]; /* epoll 事件数组 */
 
     int m_listenfd;                 /* 监听套接字文件描述符 */
-    int m_OPT_LINGER;               /* 延迟关闭/优雅关闭 */
+    int m_OPT_LINGER;               /* 延迟关闭/优雅关闭，这个选项主要影响当服务器调用close(socket)时，内核如何处理还没有发送完的数据 */
     int m_TRIGMode;                 /* 触发模式 */
     int m_LISTENTrigmode;           /* 监听套接字触发模式 */
     int m_CONNTrigmode;             /* 连接套接字触发模式 */

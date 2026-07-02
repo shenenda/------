@@ -109,10 +109,10 @@ bool Log::init(const char *file_name, int close_log, int log_buf_size, int split
         return false;               /* 初始化失败 */
     }
 
-    if (use_async)
+    if (use_async)  // 如果是异步日志模式，创建阻塞队列和后台线程
     {
         m_log_queue = new block_queue<string>(max_queue_size); /* 异步模式下，先创建生产者-消费者之间的阻塞队列 */
-        pthread_t tid;                                         /* pthread_t 用来保存新创建线程的线程 id */
+        pthread_t tid;                                         /* pthread_t 用来保存新创建的日志线程的线程 id */
 
         if (pthread_create(&tid, NULL, flush_log_thread, NULL) != 0)
         {

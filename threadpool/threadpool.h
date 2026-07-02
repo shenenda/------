@@ -178,12 +178,9 @@ void threadpool<T>::run() {
                 if (request->read_once()) {
                     request->improv = 1;
 
-                    std::shared_ptr<MYSQL> mysql_ptr(request->mysql, [](MYSQL* ptr) { 
-                        mysql_close(ptr);   /* 使用自定义删除器确保 mysql 连接正确释放 */
-                    });
-
-                    /* 使用 connectionRAII 来管理连 */
-                    connectionRAII mysqlcon(mysql_ptr, m_connPool);
+                    /* 使用 connectionRAII 来管理连接。它会把借到的 MYSQL* 写入 request->mysql，供 request->process() 使用；
+                    process() 结束后 mysqlcon 析构，连接归还池子，同时 request->mysql 被置空，避免归还后继续误用 */
+                    connectionRAII mysqlcon(&request->mysql, m_connPool);
                     request->process();     /* 处理请求 */
                 }
                 else {
@@ -199,12 +196,8 @@ void threadpool<T>::run() {
                 }
             }
         } else {
-            std::shared_ptr<MYSQL> mysql_ptr(request->mysql, [](MYSQL* ptr) {   /* 使用 shared_ptr 包装 mysql 连接 */
-                mysql_close(ptr);
-            });
-
-            /* 使用 connectionRAII 来管理连 */
-            connectionRAII mysqlcon(mysql_ptr, m_connPool);
+            /* 使用 connectionRAII 来管理连接。连接池负责连接生命周期，业务线程只在这个作用域内独占借用 MYSQL* */
+            connectionRAII mysqlcon(&request->mysql, m_connPool);
             request->process();
         }
     }

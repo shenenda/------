@@ -24,8 +24,9 @@ map<string, string> users;
 /* 从数据库中读取用户表中的用户名和密码，并将其存储到一个 map 中，供后续验证使用 */
 void http_conn::initmysql_result(connection_pool *connPool) {
 
-    /* 从连接池中获取连接，并使用智能指针管理 */
-    std::shared_ptr<MYSQL> mysql = connPool->GetConnection();
+    /* 从连接池中获取连接，并用 RAII 保证函数退出时自动归还 */
+    MYSQL *mysql = nullptr;
+    connectionRAII mysqlcon(&mysql, connPool); //mysql 是临时借用指针，不拥有连接；mysqlcon 析构时会把连接还给连接池并把 mysql 置空
     if (!mysql) {
         LOG_ERROR("Failed to get a valid MySQL connection");
         return;
@@ -33,15 +34,15 @@ void http_conn::initmysql_result(connection_pool *connPool) {
 
     /* 执行sql查询: 在user表中检索username，passwd数据 */
     const char* query = "SELECT username,passwd FROM user";
-    if (mysql_query(mysql.get(), query)) {
-        LOG_ERROR("SELECT error: %s\n", mysql_error(mysql.get()));
+    if (mysql_query(mysql, query)) {
+        LOG_ERROR("SELECT error: %s\n", mysql_error(mysql));
         return;
     }
 
     /* 获取查询结果集 */
-    MYSQL_RES *result = mysql_store_result(mysql.get());
+    MYSQL_RES *result = mysql_store_result(mysql);
     if (!result) {
-        LOG_ERROR("MySQL store result error: %s\n", mysql_error(mysql.get()));
+        LOG_ERROR("MySQL store result error: %s\n", mysql_error(mysql));
         return;
     }
 

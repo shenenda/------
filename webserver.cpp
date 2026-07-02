@@ -3,33 +3,36 @@
 WebServer::WebServer()
 {
     //http_conn类对象
-    users = new http_conn[MAX_FD];
+    users = new http_conn[MAX_FD]; //在堆区创建 MAX_FD 个 http_conn 对象，并让 users 指向第一个对象
 
     //root文件夹路径
-    char server_path[200];
-    getcwd(server_path, 200);
-    char root[6] = "/root";
-    m_root = (char *)malloc(strlen(server_path) + strlen(root) + 1);
-    strcpy(m_root, server_path);
-    strcat(m_root, root);
+    char server_path[200];     //定义当前路径缓冲区
+    getcwd(server_path, 200);  //获取当前工作目录 Current Working Directory
+    const char root[6] = "/root";
+    m_root = static_cast<char*>(malloc(strlen(server_path) + strlen(root) + 1)); //动态分配内存，用于存储根目录路径
+    strcpy(m_root, server_path); //将右边的 C 字符串完整复制到左边。
+    strcat(m_root, root);        //把右边字符串追加到左边字符串末尾
 
     //定时器
-    users_timer = new client_data[MAX_FD];
+    users_timer = new client_data[MAX_FD]; //为每一个可能的客户端连接准备一份定时器相关数据
 }
+
+// 可以写一个有参构造函数，然后实现时使用成员初始化列表来实现。这样就可以先解析命令行后，再初始化服务器对象。 */
 
 WebServer::~WebServer()
 {
     /* 释放内存和资源 */
-    close(m_epollfd);
-    close(m_listenfd);
-    close(m_pipefd[1]);
-    close(m_pipefd[0]);
-    delete[] users;
-    delete[] users_timer;
-    delete m_pool;
+    close(m_epollfd);     //关闭 epoll 文件描述符，释放内核资源
+    close(m_listenfd);    //关闭监听套接字文件描述符，释放内核资源
+    close(m_pipefd[1]);   //关闭管道写端，释放内核资源  管道：信号处理函数把信号写进管道，主线程通过epoll监听管道事件，收到信号后再处理
+    close(m_pipefd[0]);   //关闭管道读端，释放内核资源
+    delete[] users;       //释放 http_conn 对象数组
+    delete[] users_timer; //释放 client_data 对象数组
+    delete m_pool;        //释放线程池对象
+    free(m_root);         //释放根目录路径字符串（因为是malloc分配的内存，所以需要手动释放）
 }
 
-/* init：初始化服务器，包括端口号、数据库信息、线程池参数等 */
+/* init：初始化服务器，配置从命令行解析到的8个选项参数，以及用户数据库相关的三个参数，如果没有配置，则初始化为默认参数 */
 void WebServer::init(int port, string user, string passWord, string databaseName, int log_write, 
                      int opt_linger, int trigmode, int sql_num, int thread_num, int close_log, int actor_model)
 {
@@ -74,7 +77,7 @@ void WebServer::trig_mode()
 /* 创建并初始化日志 */
 void WebServer::log_write()
 {
-    if (0 == m_close_log)
+    if (0 == m_close_log) //如果日志开关为 0，表示开启日志功能
     {
         // 日志文件路径和名称
         const char *log_file_name = "./ServerLog";
@@ -98,11 +101,12 @@ void WebServer::log_write()
     }
 }
 
-/* 创建并初始化数据库连接池 */
+/* 创建并初始化数据库连接池：为什么用连接池？ 不用的话，每次一个HTTP请求要查数据库，就要先连接MYSQL，再执行再关闭，而建立数据库连接的成本比较高，尤其是并发请求多时。所以先一次性建立好多个，放进连接池里，用的时候去取，用完了放回去 */
 void WebServer::sql_pool()
 {
-    /* 初始化数据库连接池 */
-    m_connPool = connection_pool::GetInstance();
+    // 取得全局唯一的数据库连接池对象，然后按当前 WebServer 的配置，预先创建若干个 MySQL 连接。
+    /* 初始化数据库连接池，设置数据库的连接信息（包括主机地址、端口号、用户名、密码等），并建立指定数量的数据库连接 */
+    m_connPool = connection_pool::GetInstance(); // WebServer 拿到唯一的数据库连接池地址，并保存起来。
     m_connPool->init("localhost", m_user, m_passWord, m_databaseName, 3306, m_sql_num, m_close_log);
 
     /* 初始化数据库读取表 */
