@@ -42,7 +42,7 @@ private:
 /* 线程池构造函数 */
 template <typename T>
 threadpool<T>::threadpool( int actor_model, connection_pool *connPool, int thread_number, int max_requests) 
-                                : m_actor_model(actor_model),
+                                : m_actor_model(actor_model),  //要初始化的成员变量名 (初始值)
                                     m_thread_number(thread_number), 
                                     m_max_requests(max_requests), 
                                     m_threads(NULL),
@@ -52,7 +52,8 @@ threadpool<T>::threadpool( int actor_model, connection_pool *connPool, int threa
     if (thread_number <= 0 || max_requests <= 0)
         throw std::exception();
 
-    /* 使用 unique_ptr 管理线程数组，是异常安全的写法：如果中途创建线程失败抛出异常，智能指针会自动释放已申请的内存，不会泄漏 */
+    /* （这里是智能指针模板的写法，这里的模板参数是 pthread_t[]（数组类型），实例化出一个管理 pthread_t 数组的智能指针。）
+     使用 unique_ptr 管理线程数组，是异常安全的写法：如果中途创建线程失败抛出异常，智能指针会自动释放已申请的内存，不会泄漏 */
     std::unique_ptr<pthread_t[]> threads(new pthread_t[thread_number]);
 
     pthread_attr_t attr;                                            /* 线程属性对象，其作用是在调用 pthread_create 创建线程时，告诉操作系统「这个新线程要按什么参数来创建」 */
@@ -63,7 +64,7 @@ threadpool<T>::threadpool( int actor_model, connection_pool *connPool, int threa
     for (int i = 0; i < thread_number; ++i)
     {
         /* 如果线程创建失败 */
-        if (pthread_create(&threads[i], &attr, worker, this) != 0) //在进行if判断工程中，pthread_create函数已经完成了线程创建的工作（成功返回0，失败返回非零）
+        if (pthread_create(&threads[i], &attr, worker, this) != 0) //在进行if判断过程中，pthread_create函数已经完成了线程创建的工作（成功返回0，失败返回非零）
         {
             pthread_attr_destroy(&attr);                            /* 销毁线程属性对象 */
             

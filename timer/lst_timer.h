@@ -65,7 +65,7 @@ private:
     util_timer *tail;                       /* 双向链表尾指针 */
 };
 
-class Utils {
+class Utils {  /* 工具类 */
 public:
     Utils() {}
     ~Utils() {}
@@ -94,7 +94,7 @@ public:
     static int *u_pipefd;                   /* 用于存储管道的文件描述符数组，通常包含两个文件描述符：读端 (u_pipefd[0]) 和写端 (u_pipefd[1]) */
     static int u_epollfd;                   /* 用于存储 epoll 实例的文件描述符 */
 
-    sort_timer_lst m_timer_lst;             /* 定时器链表 */
+    sort_timer_lst m_timer_lst;             /* 定时器链表（基于双向链表实现的） */
     int m_TIMESLOT;                         /* 定时器的时间间隔 */
 };
 

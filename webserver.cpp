@@ -54,8 +54,8 @@ void WebServer::trig_mode()
 {
     
     if (0 == m_TRIGMode) {
-        m_LISTENTrigmode = 0;   /* 监听套接字设置为 LT 模式 */
-        m_CONNTrigmode = 0;     /* 连接套接字设置为 LT 模式 */
+        m_LISTENTrigmode = 0;   /* 监听套接字设置为 LT 模式   m_listenfd：专门负责“接收新客户端连接” */
+        m_CONNTrigmode = 0;     /* 连接套接字设置为 LT 模式   connfd：专门负责“和某一个客户端收发 HTTP 数据” */
     }
 
     else if (1 == m_TRIGMode) {
@@ -117,16 +117,16 @@ void WebServer::sql_pool()
 /* 创建并初始化服务器的线程池 */
 void WebServer::thread_pool()
 {
-    /* 输入参数: 并发模型，数据库连接池，线程池线程数 */
+    /* 输入参数: 并发模型，数据库连接池，线程池线程数。把线程池实例化为http_conn类型，模板类中原来所以写T的地方的函数任务都被替换成处理接收http_conn类型的函数。  进而，模板类实现了：将通用线程池模具和项目的HTTP业务绑定，变成了专门处理HTTP请求的线程池 */
     m_pool = new threadpool<http_conn>(m_actormodel, m_connPool, m_thread_num);
 }
 
 /* 事件监听 */
 void WebServer::eventListen()
 {
-    m_listenfd = socket(PF_INET, SOCK_STREAM, 0);   /* 创建一个套接字，使用IPv4，面向连接的字节流服务 */
+    m_listenfd = socket(PF_INET, SOCK_STREAM, 0);   /* 创建一个套接字，PF_INET（Protocol Family，协议族）：使用IPv4；SOCK_STREAM：指定套接字类型为流式套接字，对应TCP协议；0：表示使用默认协议，对SOCK_STREAM来说默认是TCP */
     
-    if (m_listenfd < 0) {                           /* 确保创建成功 */
+    if (m_listenfd < 0) {                           /* 确保创建成功  m_listenfd是套接字文件描述符 */
         perror("socket creation failed");
         exit(EXIT_FAILURE);
     }                      
@@ -139,15 +139,15 @@ void WebServer::eventListen()
     }
     else if (1 == m_OPT_LINGER)         /* 启用延迟关闭*/
     {
-        struct linger tmp = {1, 1};
+        struct linger tmp = {1, 1};    /* 此结构体有两个成员 l_onoff 和 l_linger，分别表示是否关闭套接字，以及延迟关闭的时间。 */
         setsockopt(m_listenfd, SOL_SOCKET, SO_LINGER, &tmp, sizeof(tmp));   /* 设置套接字选项，确保套接字在关闭时能优雅地处理未完成的连接。 */
     }
 
     struct sockaddr_in address;                     /* TCP/IP 协议族结构体 */
     bzero(&address, sizeof(address));               /* 将 address 结构体的所有字节设置为 0，确保未使用的字段被清零 */
-    address.sin_family = AF_INET;                   /* 地址族，IPv4 */
-    address.sin_addr.s_addr = htonl(INADDR_ANY);    /* INADDR_ANY 表示监听所有可用的接口（IPv4地址） */
-    address.sin_port = htons(m_port);               /* htons 将端口号的主机字节序转换为网络字节序 */
+    address.sin_family = AF_INET;                   /* Address Family地址族，IPv4 */
+    address.sin_addr.s_addr = htonl(INADDR_ANY);    /* INADDR_ANY 表示监听本机所有可用的接口（IPv4地址） */
+    address.sin_port = htons(m_port);               /* htons 将端口号的主机字节序转换为网络字节序（固定是大端序） */
 
     int flag = 1;
     /* 
@@ -155,7 +155,7 @@ void WebServer::eventListen()
         当设置了这个选项后，允许在相同的 IP 地址和端口上快速重用套接字，即使之前的连接还处于 TIME_WAIT 状态。
         这在服务器程序中很有用，特别是当服务器需要快速重启时，可以避免因为等待 TIME_WAIT 状态结束而导致的延迟。 
     */
-    setsockopt(m_listenfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
+    setsockopt(m_listenfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));/*setsockopt(socket文件描述符,选项所在层级,选项名称,选项值地址,选项值大小);用来设置socket的属性 */
 
     /* 绑定套接字到指定的地址和端口 */
     if (bind(m_listenfd, (struct sockaddr *)&address, sizeof(address)) < 0) {
@@ -164,14 +164,14 @@ void WebServer::eventListen()
         exit(EXIT_FAILURE);
     }
 
-    /* 监听队列长度为5 */
+    /* 把普通套接字转为监听套接字   监听队列长度为5，是已完成三次握手、等待 accept 处理的连接队列的最大长度。高并发场景会调大这个值。 */
     if (listen(m_listenfd, 5) < 0) {
         perror("Listen failed");
         close(m_listenfd);
         exit(EXIT_FAILURE);
     }
 
-    utils.init(TIMESLOT);                           /* 初始化定时器 */
+    utils.init(TIMESLOT);                           /* 初始化定时器   作用：后续用来周期性检查超时连接，把长时间不活动的客户端连接踢掉，释放服务器资源*/
 
     //epoll创建内核事件表
     epoll_event events[MAX_EVENT_NUMBER];           /* 事件数组，用于存储 epoll 检测到的事件 */
@@ -182,8 +182,8 @@ void WebServer::eventListen()
         exit(EXIT_FAILURE);
     }
 
-    utils.addfd(m_epollfd, m_listenfd, false, m_LISTENTrigmode);
-    http_conn::m_epollfd = m_epollfd;               /* 将 epoll 文件描述符赋值给 http_conn 类的静态成员变量，用于处理 HTTP 连接 */
+    utils.addfd(m_epollfd, m_listenfd, false, m_LISTENTrigmode); /*调用工具类封装的函数，把监听 fd 注册到 epoll 中，监听它的读事件（有新连接到来就是读事件就绪）*/
+    http_conn::m_epollfd = m_epollfd;               /* 将 epoll 文件描述符赋值给 http_conn 类的静态成员变量，用于处理 HTTP 连接，所有HTTP连接对象共享同一个epoll实例 */
 
     /* 创建一对无名管道，用于在进程内部进行双向通信，常用于信号处理 */
     if (socketpair(PF_UNIX, SOCK_STREAM, 0, m_pipefd) == -1) {
@@ -192,16 +192,16 @@ void WebServer::eventListen()
         exit(EXIT_FAILURE);
     }
 
-    utils.setnonblocking(m_pipefd[1]);              /* 将管道的写端设置为非阻塞模式 */
-    utils.addfd(m_epollfd, m_pipefd[0], false, 0);  /* 将管道的读端添加到 epoll 实例中，用于监听信号 */
+    utils.setnonblocking(m_pipefd[1]);              /* 将管道的写端设置为非阻塞模式，信号处理函数写管道时，如果管道满了不会阻塞，避免信号处理函数卡住 */
+    utils.addfd(m_epollfd, m_pipefd[0], false, 0);  /* 将管道的读端添加到 epoll 实例中，用于监听信号，有信号写入时epoll就能检测到 */
 
-    utils.addsig(SIGPIPE, SIG_IGN);
-    utils.addsig(SIGALRM, utils.sig_handler, false);
-    utils.addsig(SIGTERM, utils.sig_handler, false);
+    utils.addsig(SIGPIPE, SIG_IGN); /*当客户端异常断开后，服务器还往 socket 写数据时，会收到这个信号，默认行为是直接终止进程。服务器必须忽略它，防止因为一个客户端掉线导致整个服务崩溃*/
+    utils.addsig(SIGALRM, utils.sig_handler, false);/*闹钟超时信号，由 alarm 函数触发，用来驱动定时器，周期性清理超时连接*/
+    utils.addsig(SIGTERM, utils.sig_handler, false);/*进程终止信号（比如 kill 命令默认发送的信号），收到后通知服务器优雅退出*/
 
-    alarm(TIMESLOT);
+    alarm(TIMESLOT);/*设置一个定时器，TIMESLOT 秒后触发 SIGALRM 信号，启动定时器循环。每次信号触发、处理完超时任务后，会再调用一次 alarm，实现周期性的定时检查*/
 
-    //工具类,信号和描述符基础操作
+    //把管道、epoll 的 fd 赋值给工具类的静态成员，让工具类里的信号处理、fd 操作等全局函数可以直接使用这些资源，不用每次传参，方便全局调用
     Utils::u_pipefd = m_pipefd;
     Utils::u_epollfd = m_epollfd;
 }

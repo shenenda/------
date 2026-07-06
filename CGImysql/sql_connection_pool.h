@@ -67,7 +67,7 @@ public:
     connectionRAII& operator=(const connectionRAII&) = delete; // 禁止拷贝赋值操作
 
     // 构造函数，从连接池中获取连接并交给业务对象临时使用
-    connectionRAII(MYSQL **con, connection_pool *connPool)
+    connectionRAII(MYSQL **con, connection_pool *connPool) //函数参数默认是值传递，如果只传一级指针，函数拿到的只是指针的副本，内部修改副本的指向，不会影响外面的原指针。想让函数内部真的能修改外面的指针变量，就必须传这个指针变量自己的地址，也就是二级指针
     {
         if (con == nullptr || connPool == nullptr)
         {
@@ -76,25 +76,32 @@ public:
 
         // 对象创建时，自动从连接池取出一条连接，通过 MYSQL** 写回业务对象的 MYSQL* 成员
         // 这里不用 shared_ptr：连接池要求“一条连接同一时刻只能被一个线程独占使用”，shared_ptr 会制造多个仍然有效的拥有者，破坏这个独占借用语义
-        *con = connPool->GetConnection();
+        *con = connPool->GetConnection(); // *con 是业务对象的 MYSQL* 成员，*conRAII 是连接池借出的 MYSQL*，通过 *con = *conRAII 把连接借给业务对象
         if (*con == nullptr)
         {
             throw std::runtime_error("Failed to get a valid database connection.");
         }
         
         // 把连接指针和连接池指针存到成员变量里，留给析构函数用
-        conRAII = *con;
-        sqlRAII = con;
-        poolRAII = connPool;
+        conRAII = *con; //存拿到的数据库连接指针（一级指针），析构时要归还的就是这个连接。
+        sqlRAII = con;  //存外部指针变量的地址（二级指针），有些实现会在析构时把外部指针置空，防止连接归还后调用者还继续误用野指针。
+        poolRAII = connPool; //存连接池指针，析构时要把连接还给这个池子。
+        /*为什么必须存起来？    这是 RAII 模式的标准要求：构造时拿资源，析构时还资源。
+        构造的时候，你通过形参 connPool 知道「从哪个连接池取连接」；
+        但析构函数执行的时候，构造函数早就结束了，形参 connPool 已经不存在了。
+        所以必须在构造阶段，就把连接池的地址存到对象自己的成员变量里。等对象出作用域、析构函数执行时，才能通过 poolRAII->ReleaseConnection(conRAII)，把连接正确归还到原来的连接池里。 */
     }
 
     // 析构函数
+    /*先作废所有指向这个连接的指针，再把连接归还回池。
+    这样能保证：从连接被归还的那一刻起，当前作用域里没有任何指针能再操作它，彻底避免
+    “连接已经还给别人了，这边还在继续用” 的并发错误，是非常严谨的防御性设计。*/
     ~connectionRAII()
     {
-        if (conRAII) //对象生命周期结束时（出作用域、函数 return、抛出异常），自动调用 ReleaseConnection 把连接归还池子。无论业务代码以什么方式退出，连接一定会被归还，彻底杜绝 “忘记归还连接、最终池子被耗空” 的问题，和 locker_guard 防死锁的价值完全一致
+        if (conRAII) /*防御性校验，只有对象确实持有有效连接时，才执行归还逻辑。如果构造时拿连接失败、conRAII 本来就是空指针，就直接跳过，避免对空指针执行归还操作导致错误。*/
         {
-            MYSQL *borrowed = conRAII;
-            if (sqlRAII != nullptr && *sqlRAII == conRAII)
+            MYSQL *borrowed = conRAII; //定义一个局部临时变量，把当前持有的连接指针先备份一份：因为马上要把指向这个连接的指针conRAII置空了，但是归还连接时还需要用这个指针才能把连接放回池子里。
+            if (sqlRAII != nullptr && *sqlRAII == conRAII) //sqlRAII 是类的私有成员，类型为 MYSQL**（二级指针），保存的是外部调用者的指针变量的地址（就是构造时传进来的那个 con）
             {
                 *sqlRAII = nullptr; //先把外部 MYSQL* 置空，再归还连接，避免外部变量在“连接已经回池”后仍显示为可用
             }
@@ -104,8 +111,8 @@ public:
     }
 
 private:
-    MYSQL *conRAII;        // 当前 RAII 对象借到的数据库连接；它只是借用，不负责 mysql_close
-    MYSQL **sqlRAII;       // 指向外部 MYSQL* 变量的地址，析构时可把外部指针置空，防止归还后继续使用
+    MYSQL *conRAII;        // 指向当前 RAII 对象借到的数据库连接的地址；它只是借用，不负责 mysql_close
+    MYSQL **sqlRAII;       // sqlRAII是个指针，指向外部 MYSQL* 变量本身（也是一个地址） 的地址（也就是地址里存的是另一个地址），析构时可把外部指针置空，防止归还后继续使用
     connection_pool *poolRAII;       // 持有的连接池
 };
 
