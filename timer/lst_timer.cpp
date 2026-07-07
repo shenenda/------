@@ -218,7 +218,7 @@ void Utils::addfd(int epollfd, int fd, bool one_shot, int TRIGMode) {
 void Utils::sig_handler(int sig) {
 
     int save_errno = errno;                     /* 保证函数的可重入性，保留原来的errno */
-    int msg = sig;
+    char msg = static_cast<char>(sig);              /* 和 WebServer::dealwithsignal 的 char 缓冲区保持一致：每次只写入一个信号编号字节 */
        
     /* 将send替换为write, write异步信号安全 */ 
     if (write(u_pipefd[1], &msg, sizeof(msg)) == -1) {
@@ -282,7 +282,7 @@ void Utils::show_error(int connfd, const char *info)
 
 // 静态成员变量的“定义和分配存储空间”
 int *Utils::u_pipefd = 0; /* 用于存储管道文件描述符，用于传递信号。将接收到的信号写入u_pipefd[1]中，而事件主循环监听管道的另一端u_pipefd[0]的可读事件，以异步处理信号 */
-int Utils::u_epollfd = 0; //存储epoll实例的文件描述符。 只是保存指向 WebServer::m_pipefd 的地址，不拥有这个数组，因为真正的数组属于Websever对象
+int Utils::u_epollfd = 0; //存储 epoll 实例的文件描述符；这里只保存 fd 数值，不拥有 epoll 资源，真正的创建和关闭由 WebServer 管理
 
 
 class Utils; //前置声明： 因为Utils::u_epollfd是Utils的静态成员，静态成员的访问不依赖于Utils类的实例。前置声明用于减少编译依赖

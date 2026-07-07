@@ -173,8 +173,7 @@ void WebServer::eventListen()
 
     utils.init(TIMESLOT);                           /* 初始化定时器   作用：后续用来周期性检查超时连接，把长时间不活动的客户端连接踢掉，释放服务器资源*/
 
-    //epoll创建内核事件表
-    epoll_event events[MAX_EVENT_NUMBER];           /* 事件数组，用于存储 epoll 检测到的事件 */
+    //epoll创建内核事件表；真正接收 epoll_wait 输出的是 WebServer::events 成员数组
     m_epollfd = epoll_create(5);                    /* 创建一个 epoll 实例 */
     if (m_epollfd == -1) {
         perror("Epoll creation failed");
@@ -208,18 +207,19 @@ void WebServer::eventListen()
 
 void WebServer::timer(int connfd, struct sockaddr_in client_address)
 {
+    /*初始化http连接，user数组中的每一个元素，都对应一个可能的客户端连接*/
     users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode, m_close_log, m_user, m_passWord, m_databaseName);
 
     //初始化client_data数据
     //创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
-    users_timer[connfd].address = client_address;
-    users_timer[connfd].sockfd = connfd;
-    util_timer *timer = new util_timer;
-    timer->user_data = &users_timer[connfd];
+    users_timer[connfd].address = client_address; //客户端数据指针，是client_data类型的数组
+    users_timer[connfd].sockfd = connfd; //sockfd：保存连接的 socket 描述符，超时关闭连接时要用到它
+    util_timer *timer = new util_timer; //在堆上新建一个定时器对象。每个客户端连接都对应一个独立的定时器，各自管理自己的超时时间
+    timer->user_data = &users_timer[connfd];//把刚才的 client_data 结构体地址，存到定时器的 user_data 成员里。作用：定时器超时触发时，回调函数本身不知道该处理哪个连接，通过 user_data 就能拿到连接的 socket、地址等全部信息，执行关闭清理操作
     timer->cb_func = cb_func;
     time_t cur = time(NULL);
     timer->expire = cur + 3 * TIMESLOT;
-    users_timer[connfd].timer = timer;
+    users_timer[connfd].timer = timer; //把新建的定时器指针，存回 users_timer 数组里。 作用：后续这个连接有数据传输时（读 / 写事件触发），可以通过 connfd 立刻找到对应的定时器，调用 adjust_timer 把超时时间往后顺延（也就是「刷新心跳」），这就是为什么有数据交互的连接不会被超时踢掉。
     utils.m_timer_lst.add_timer(timer);
 }
 
@@ -234,9 +234,11 @@ void WebServer::adjust_timer(util_timer *timer)
     LOG_INFO("%s", "adjust timer once");
 }
 
+/* 处理超时连接，执行关闭与清理
+当某个连接判定为超时（或出错需要主动关闭）时，执行超时回调回收连接资源，再把定时器从全局链表中移除，同时打印日志记录。 */
 void WebServer::deal_timer(util_timer *timer, int sockfd)
 {
-    timer->cb_func(&users_timer[sockfd]);
+    timer->cb_func(&users_timer[sockfd]); //传入 &users_timer[sockfd] 是因为回调函数自身不知道要关闭哪个连接，通过用户数据可以拿到 sockfd、客户端地址等全部信息
     if (timer)
     {
         utils.m_timer_lst.del_timer(timer);
@@ -245,35 +247,40 @@ void WebServer::deal_timer(util_timer *timer, int sockfd)
     LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
 }
 
+/*处理新客户端连接请求  当监听套接字 m_listenfd 上有新连接事件触发时，调用此函数执行 accept 接收新连接，并完成连接初始化与定时器绑定*/
 bool WebServer::dealclientdata()
 {
     struct sockaddr_in client_address;
     socklen_t client_addrlength = sizeof(client_address);
     if (0 == m_LISTENTrigmode)
     {
-        int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength);
+        int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength); //只accept一次，因为accept是非阻塞的，只要监听队列里还有未处理的连接，epoll 就会持续触发读事件。本次处理一个，剩下的下次 epoll_wait 还会提醒，不会丢失连接。
         if (connfd < 0)
         {
             LOG_ERROR("%s:errno is:%d", "accept error", errno);
             return false;
         }
-        if (http_conn::m_user_count >= MAX_FD)
+        if (http_conn::m_user_count >= MAX_FD) //过载保护
         {
             utils.show_error(connfd, "Internal server busy");
             LOG_ERROR("%s", "Internal server busy");
             return false;
         }
-        timer(connfd, client_address);
+        timer(connfd, client_address); //初始化 HTTP 连接对象、绑定超时定时器、加入全局定时器链表
     }
 
     else
     {
         while (1)
         {
-            int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength);
+            int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength); //循环accept，直到没有新连接为止。 这是 ET 模式的强制要求：新连接到来只会触发一次事件通知，必须一次性把所有已就绪的连接全部处理完；否则剩下的连接会一直留在队列里，再也不会被通知到，造成连接泄漏。
             if (connfd < 0)
             {
-                LOG_ERROR("%s:errno is:%d", "accept error", errno);
+                //ET 模式下，非阻塞 accept 返回 EAGAIN/EWOULDBLOCK 表示监听队列已经被取空，这是正常结束条件，不应该当成错误日志刷屏。
+                if (errno != EAGAIN && errno != EWOULDBLOCK)
+                {
+                    LOG_ERROR("%s:errno is:%d", "accept error", errno);
+                }
                 break;
             }
             if (http_conn::m_user_count >= MAX_FD)
@@ -289,32 +296,33 @@ bool WebServer::dealclientdata()
     return true;
 }
 
+/*处理管道传递的信号事件  从信号管道的读端读取信号编号，解析出是「超时信号」还是「终止信号」，通过引用参数把结果回传给主循环，让主循环统一处理超时检查和服务器退出。*/
 bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
 {
     int ret = 0;
     int sig;
-    char signals[1024];
-    ret = recv(m_pipefd[0], signals, sizeof(signals), 0);
-    if (ret == -1)
+    char signals[1024]; //读取缓冲区。信号处理函数会把信号编号（如 SIGALRM、SIGTERM 的整数值）作为单个字节写入管道，这里用来批量接收
+    ret = recv(m_pipefd[0], signals, sizeof(signals), 0); //从管道读端 m_pipefd[0] 读取数据
+    if (ret == -1) //读取出错
     {
         return false;
     }
-    else if (ret == 0)
+    else if (ret == 0) //管道的对端已关闭，异常情况，返回失败
     {
         return false;
     }
     else
     {
-        for (int i = 0; i < ret; ++i)
+        for (int i = 0; i < ret; ++i) //遍历读到的所有信号字节
         {
             switch (signals[i])
             {
-            case SIGALRM:
+            case SIGALRM: //SIGALRM（闹钟超时信号）：把 timeout 置为 true，告诉主循环「定时时间到了，该检查所有超时连接了」
             {
                 timeout = true;
                 break;
             }
-            case SIGTERM:
+            case SIGTERM: //SIGTERM（进程终止信号）：把 stop_server 置为 true，告诉主循环「收到退出指令，该停止服务了」
             {
                 stop_server = true;
                 break;
@@ -325,61 +333,63 @@ bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
     return true;
 }
 
+/*处理客户端读就绪事件  当 epoll 检测到某个客户端 socket 有数据可读时触发，根据配置的并发模型（Reactor / Proactor），以不同的分工方式读取客户端数据、投递业务任务、刷新超时定时器*/
 void WebServer::dealwithread(int sockfd)
 {
-    util_timer *timer = users_timer[sockfd].timer;
+    util_timer *timer = users_timer[sockfd].timer; //执行前先取出该连接对应的定时器，后续要么刷新它的超时时间（活跃连接），要么触发它关闭连接（出错 / 断开）
 
-    //reactor
+    //reactor 工作线程负责IO读写+业务处理，主线程只负责事件分发和结果同步
     if (1 == m_actormodel)
     {
         if (timer)
         {
-            adjust_timer(timer);
+            adjust_timer(timer); //先刷新定时器：有数据交互说明连接是活跃的，把超时时间往后顺延 3 个时间片，重置超时倒计时
         }
 
         //若监测到读事件，将该事件放入请求队列
-        m_pool->append(users + sockfd, 0);
+        m_pool->append(users + sockfd, 0); //users + sockfd 等价于 &users[sockfd]，指向该连接对应的 http_conn 对象。  第二个参数 0 是任务状态标记，告诉工作线程：这是读事件，需要你执行 read_once() 读取数据
 
-        while (true)
+        while (true) //主线程自旋等待工作线程处理完成，通过共享标志位同步状态
         {
-            if (1 == users[sockfd].improv)
+            if (1 == users[sockfd].improv) //improv == 1：工作线程已经处理完本次任务（无论成功失败）
             {
-                if (1 == users[sockfd].timer_flag)
+                if (1 == users[sockfd].timer_flag) //检查 timer_flag：如果为 1，说明读操作失败（客户端断开、出错）
                 {
-                    deal_timer(timer, sockfd);
+                    deal_timer(timer, sockfd); //调用 deal_timer 关闭连接、移除定时器
                     users[sockfd].timer_flag = 0;
                 }
-                users[sockfd].improv = 0;
+                users[sockfd].improv = 0; //重置 improv 标志位，跳出等待循环
                 break;
             }
         }
     }
     else
     {
-        //proactor
-        if (users[sockfd].read_once())
+        //proactor   主线程负责 IO 读写，数据读完之后再把业务处理任务投给线程池，工作线程只负责纯业务逻辑
+        if (users[sockfd].read_once()) //主线程直接调用 read_once()，把客户端的数据从 socket 读到连接的读缓冲区中
         {
             LOG_INFO("deal with the client(%s)", inet_ntoa(users[sockfd].get_address()->sin_addr));
 
             //若监测到读事件，将该事件放入请求队列
-            m_pool->append_p(users + sockfd);
+            m_pool->append_p(users + sockfd); // 把业务任务投到线程池 —— 不需要状态参数，因为 IO 已经做完了，工作线程直接执行 process() 解析请求、生成响应即可
 
             if (timer)
             {
-                adjust_timer(timer);
+                adjust_timer(timer); //刷新定时器，活跃连接延后超时
             }
         }
         else
         {
-            deal_timer(timer, sockfd);
+            deal_timer(timer, sockfd); //读取失败（客户端主动断开、网络出错）：直接调用 deal_timer，执行关闭连接、移除定时器的完整清理操作。
         }
     }
 }
 
+//处理客户端写就绪事件  当 epoll 检测到某个客户端 socket 有数据可写时触发，根据配置的并发模型（Reactor / Proactor），以不同的分工方式向客户端发送响应数据、刷新超时定时器
 void WebServer::dealwithwrite(int sockfd)
 {
-    util_timer *timer = users_timer[sockfd].timer;
-    //reactor
+    util_timer *timer = users_timer[sockfd].timer; ////执行前先取出该连接对应的定时器，后续要么刷新它的超时时间（活跃连接），要么触发它关闭连接（出错 / 断开）
+    //reactor模式下通过 improv、timer_flag 两个共享标志位，在主线程和工作线程之间同步任务处理结果，是简单高效的线程间通信方式。
     if (1 == m_actormodel)
     {
         if (timer)
@@ -387,9 +397,9 @@ void WebServer::dealwithwrite(int sockfd)
             adjust_timer(timer);
         }
 
-        m_pool->append(users + sockfd, 1);
+        m_pool->append(users + sockfd, 1); //投递任务到线程池，状态参数 1 表示「写事件」，工作线程会执行 write() 把响应数据发回客户端
 
-        while (true)
+        while (true) //和读事件完全一致：主线程自旋等待工作线程处理完成，根据 timer_flag 判断是否出错，出错则关闭连接。
         {
             if (1 == users[sockfd].improv)
             {
@@ -412,67 +422,76 @@ void WebServer::dealwithwrite(int sockfd)
 
             if (timer)
             {
-                adjust_timer(timer);
+                adjust_timer(timer); //发送成功：打日志，刷新定时器
             }
         }
         else
         {
-            deal_timer(timer, sockfd);
+            deal_timer(timer, sockfd); //发送失败：调用 deal_timer 关闭连接、清理定时器
         }
     }
 }
 
+
+/*基于 epoll 事件驱动模型，以「阻塞等待事件 → 分类分发处理 → 周期检查超时」的方式无限循环，
+直到收到退出信号为止。所有的新连接、数据读写、异常断开、信号、超时清理，都在这个循环里统一调度*/
 void WebServer::eventLoop()
 {
-    bool timeout = false;
-    bool stop_server = false;
+    bool timeout = false; //超时标记，收到 SIGALRM 闹钟信号后会被置为 true，用于触发一轮超时连接检查
+    bool stop_server = false; //服务器退出标志，收到 SIGTERM 终止信号后会被置为 true，循环结束，服务优雅退出
 
     while (!stop_server)
     {
-        int number = epoll_wait(m_epollfd, events, MAX_EVENT_NUMBER, -1);
-        if (number < 0 && errno != EINTR)
+        int number = epoll_wait(m_epollfd, events, MAX_EVENT_NUMBER, -1); //调用 epoll_wait 阻塞等待内核事件表中有事件就绪
+        /*m_epollfd：epoll 实例的文件描述符；
+        events：输出数组，内核会把所有就绪的事件填到这个数组里；
+        MAX_EVENT_NUMBER：数组最大长度，一次最多返回这么多个就绪事件；
+        -1：超时时间，负数表示永久阻塞，直到有事件就绪才返回*/
+        if (number < 0 && errno != EINTR) //如果错误是 EINTR：表示 epoll_wait 被信号中断了，这是正常情况（比如闹钟信号触发），不报错，直接进入下一轮循环
         {
             LOG_ERROR("%s", "epoll failure");
             break;
         }
 
-        for (int i = 0; i < number; i++)
+        for (int i = 0; i < number; i++) //遍历本次所有就绪事件，根据事件所属的 fd 和事件类型，分成 5 个分支分别处理。这就是事件分发器的核心逻辑
         {
             int sockfd = events[i].data.fd;
 
-            //处理新到的客户连接
-            if (sockfd == m_listenfd)
+            //处理新到的客户端连接事件
+            if (sockfd == m_listenfd) //触发条件：就绪的 fd 是监听套接字，说明有新客户端完成了三次握手，等待被接收。
             {
-                bool flag = dealclientdata();
+                bool flag = dealclientdata(); //处理逻辑：调用 dealclientdata() 执行 accept 接收连接、初始化 HTTP 对象、绑定定时器。
                 if (false == flag)
-                    continue;
+                    continue; //LT 下多表示处理失败；ET 分支处理完 accept 循环后也会返回 false，用于结束当前分支
             }
+            //连接异常/断开事件 ： 服务器自动清理异常连接的重要机制，避免无效连接长期占用资源
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
                 //服务器端关闭连接，移除对应的定时器
                 util_timer *timer = users_timer[sockfd].timer;
                 deal_timer(timer, sockfd);
             }
-            //处理信号
-            else if ((sockfd == m_pipefd[0]) && (events[i].events & EPOLLIN))
+            //处理信号事件（统一事件源）：信号也变成了 epoll 里的 IO 事件，在主循环同步处理，彻底避免异步竞态
+            else if ((sockfd == m_pipefd[0]) && (events[i].events & EPOLLIN)) //触发条件：管道读端有数据可读，说明信号处理函数往管道里写入了信号值
             {
-                bool flag = dealwithsignal(timeout, stop_server);
+                bool flag = dealwithsignal(timeout, stop_server); //处理逻辑：调用 dealwithsignal 读取管道里的信号，通过引用参数修改 timeout 和 stop_server 两个标记，把异步信号转成同步的状态标志，交给循环后续统一处理
                 if (false == flag)
-                    LOG_ERROR("%s", "dealclientdata failure");
+                    LOG_ERROR("%s", "dealwithsignal failure");
             }
-            //处理客户连接上接收到的数据
-            else if (events[i].events & EPOLLIN)
+            //处理客户连接上接收到的数据，客户端读就绪事件
+            else if (events[i].events & EPOLLIN) //触发条件：某个客户端连接的 socket 有数据可读，客户端发来了 HTTP 请求数据
             {
-                dealwithread(sockfd);
+                dealwithread(sockfd); //处理逻辑：调用 dealwithread，按 Reactor/Proactor 模式分工，完成数据读取、业务任务投递、定时器刷新
             }
-            else if (events[i].events & EPOLLOUT)
+            //处理客户连接上要发送的数据，客户端写就绪事件
+            else if (events[i].events & EPOLLOUT) //触发条件：某个客户端连接的 socket 可写，服务器可以向客户端发送 HTTP 响应数据
             {
-                dealwithwrite(sockfd);
+                dealwithwrite(sockfd); //处理逻辑：调用 dealwithwrite，按模式分工完成响应发送、定时器刷新
             }
         }
-        if (timeout)
+        if (timeout) //当 timeout 被信号处理置为 true 时，说明一个定时周期到了，需要检查所有超时连接
         {
-            utils.timer_handler();
+            utils.timer_handler(); //遍历定时器链表，把所有已经超时的连接依次触发回调、关闭连接、移除定时器；同时重新调用 alarm 设置下一次闹钟，形成周期性循环
 
             LOG_INFO("%s", "timer tick");
 
@@ -480,3 +499,7 @@ void WebServer::eventLoop()
         }
     }
 }
+
+/*统一事件源思想
+新连接、读写 IO、异常断开、信号、定时，所有事件全部通过 epoll 在同一个循环里同步处理，
+架构清晰、竞态少，是 Linux 高性能网络编程的经典架构。*/
