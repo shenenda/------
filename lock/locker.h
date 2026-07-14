@@ -47,7 +47,7 @@ private:
     sem_t m_sem;  //sem_t是POSIX底层使用的信号量类型，m_sem是真正的信号量对象
 };
 
-/* 锁 */
+/* 互斥锁类 */
 class locker {
 public:
     locker() { //构造函数无返回值，所以初始化成功返回可用实例，失败则抛出异常中断构造
@@ -98,7 +98,7 @@ private:
     locker& m_locker;  // 引用自定义锁，互斥锁本身是不可复制的系统资源，不能拷贝
 };
 
-/* 条件变量 */
+/* 条件变量类 */
 class cond {
 public:
     cond() {
