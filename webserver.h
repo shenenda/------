@@ -18,6 +18,11 @@
 #include <stdlib.h>                  /* 包含 C 标准库中的通用工具函数和宏定义，如内存分配、程序退出等 */
 #include <cassert>                   /* 断言头文件，用于在调试阶段检查程序的假设条件 */ 
 #include <sys/epoll.h>               /* epoll 相关头文件 */
+#include <sys/eventfd.h>             /* eventfd：工作线程向主事件循环发送失败通知 */
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+#include <queue>
 
 #include "./threadpool/threadpool.h" /*线程池头文件*/
 #include "./http/http_conn.h"        /*HTTP连接处理类头文件*/
@@ -50,6 +55,16 @@ public:
     void dealwithread(int sockfd);
     void dealwithwrite(int sockfd);
 
+private:
+    struct worker_failure
+    {
+        int sockfd;
+        std::uint64_t generation;
+    };
+
+    void notify_worker_failure(http_conn *request, std::uint64_t generation);
+    void dealwithworkerfailure();
+
 public:
     
     int m_port;                     /* 服务器端口号 */
@@ -59,8 +74,12 @@ public:
     int m_actormodel;               /* 线程池并发模式 */
 
     int m_pipefd[2];                /* 用于进程间通信的管道文件描述符 */
+    int m_worker_eventfd;           /* 工作线程失败通知描述符，由主事件循环监听 */
     int m_epollfd;                  /* epoll 文件描述符 */
     http_conn *users;               /* HTTP 连接对象数组 users 是一个指向 http_conn 对象数组的指针，数组里的每一个元素对应一个和服务器建立了 TCP 连接的客户端，用来集中管理所有并发连接的全部状态 */
+    std::uint64_t *m_connection_generation; /* fd 每次复用时递增，过滤旧任务的迟到通知 */
+    std::mutex m_worker_failure_mutex;
+    std::queue<worker_failure> m_worker_failures;
 
     connection_pool *m_connPool;    /* 数据库连接池对象的指针 */
     string m_user;                  /* 登陆数据库用户名 */

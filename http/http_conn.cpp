@@ -182,13 +182,13 @@ void http_conn::init(int sockfd, const sockaddr_in &addr, char *root, int TRIGMo
     assert(sockfd >= 0);
     m_sockfd = sockfd;                      /* 文件描述符 */
     m_address = addr;                       /* 套接字地址 */
+    m_TRIGMode = TRIGMode;
 
     addfd(m_epollfd, sockfd, true, m_TRIGMode); /* 注册到HTTP内核事件表 */
     m_user_count++;                         /* 活跃连接数加一 */
 
     //当浏览器出现连接重置时，可能是网站根目录出错或http响应格式出错或者访问的文件中内容完全为空
     doc_root = root;
-    m_TRIGMode = TRIGMode;
     m_close_log = close_log;
 
     /* 存储数据库连接信息 */
@@ -218,11 +218,6 @@ void http_conn::init() {
     m_read_idx = 0;
     m_write_idx = 0;
     cgi = 0;
-    m_state = 0;
-
-    timer_flag = 0;         /* 定时器相关 */
-    improv = 0;
-
     /* 清空缓冲区 */
     memset(m_read_buf, '\0', READ_BUFFER_SIZE);
     memset(m_write_buf, '\0', WRITE_BUFFER_SIZE);
@@ -293,12 +288,11 @@ bool http_conn::read_once() {
     //LT读取数据：单次 recv，读多少算多少，缓冲区剩余数据下次 epoll_wait 继续触发读事件
     if (0 == m_TRIGMode) {
         bytes_read = recv(m_sockfd, m_read_buf + m_read_idx, READ_BUFFER_SIZE - m_read_idx, 0);
-        m_read_idx += bytes_read;
-
         if (bytes_read <= 0) {
             return false;
         }
 
+        m_read_idx += bytes_read;
         return true;
     }
     //ET读数据：while 循环持续 recv 直到返回 EAGAIN，必须一次性读完缓冲区所有数据，否则内核不会再通知该 fd 读事件，造成数据卡死
@@ -871,23 +865,24 @@ bool http_conn::process_write(HTTP_CODE ret) {
     return true;
 }
 
-void http_conn::process() {
+bool http_conn::process() {
 
     // 读取客户端数据并解析
     HTTP_CODE read_ret = process_read();
 
     if (read_ret == NO_REQUEST) { // 读取不完整，继续监听
         modfd(m_epollfd, m_sockfd, EPOLLIN, m_TRIGMode); //继续监听
-        return;
+        return true;
     }
 
     bool write_ret = process_write(read_ret); //生成响应
 
     if (!write_ret) {
-        close_conn();
+        return false;
     }
 
     modfd(m_epollfd, m_sockfd, EPOLLOUT, m_TRIGMode); //注册写事件发送响应
+    return true;
 }
 
 

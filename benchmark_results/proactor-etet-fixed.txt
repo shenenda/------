@@ -1,0 +1,12 @@
+Mode: proactor-etet (actor=0, trig=3)
+Command: webbench -c 100 -t 10 http://127.0.0.1:9006/
+Smoke: HTTP 200, 6573 bytes
+
+Webbench - Simple Web Benchmark 1.5
+Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.
+
+Benchmarking: GET http://127.0.0.1:9006/
+100 clients, running 10 sec.
+
+Speed=871344 pages/min, 1626508 bytes/sec.
+Requests: 145224 susceed, 0 failed.

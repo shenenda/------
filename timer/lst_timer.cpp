@@ -117,6 +117,9 @@ void sort_timer_lst::tick() {
         }
 
         tmp->cb_func(tmp->user_data); //当前定时器到期，执行回调函数：从 epoll 删除 fd，  关闭客户端 socket，  用户数减一
+        if (tmp->user_data) {
+            tmp->user_data->timer = NULL;
+        }
 
         head = tmp->next; //把到期的tmp删了，因为本身是排好序的，所以新的头节点就是下一个到期的定时器
         if (head) {
@@ -294,14 +297,22 @@ void cb_func(client_data *user_data) {
         return;
     }
 
+    const int sockfd = user_data->sockfd;
+    if (sockfd < 0) {
+        return;
+    }
+
     /* 从 epoll 中删除超时的客户端的文件描述符 */
-    if (epoll_ctl(Utils::u_epollfd, EPOLL_CTL_DEL, user_data->sockfd, nullptr) == -1) {
+    if (epoll_ctl(Utils::u_epollfd, EPOLL_CTL_DEL, sockfd, nullptr) == -1 && errno != ENOENT) {
         std::cerr << "epoll_ctl DEL failed: " << strerror(errno) << std::endl;
     }
     /* 关闭超时的客户端的连接 */
-    if (close(user_data->sockfd) == -1) {
+    if (close(sockfd) == -1 && errno != EBADF) {
         std::cerr << "close failed: " << strerror(errno) << std::endl;
     }
 
-    http_conn::m_user_count--;                  /* 减少当前在线用户计数 */
+    user_data->sockfd = -1;
+    if (http_conn::m_user_count > 0) {
+        http_conn::m_user_count--;              /* 减少当前在线用户计数 */
+    }
 }

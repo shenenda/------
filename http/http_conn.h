@@ -89,7 +89,7 @@ public:
     void close_conn(bool real_close = true);
     
     /* 主业务处理函数：读数据→解析 HTTP→生成响应→发送 */
-    void process();
+    bool process();
 
     /* 一次性从 socket 读取客户端全部数据（ET 模式循环 recv） */
     bool read_once();
@@ -101,9 +101,6 @@ public:
 
     /* 初始化 MySQL 结果集 */
     void initmysql_result(connection_pool *connPool);
-
-    int timer_flag;             /* 定时器标志位 */
-    int improv;
 
 // 内部私有工具函数，做业务拆分
 private:
@@ -137,7 +134,6 @@ public:
     static int m_epollfd;                   /* 内核事件表（是静态成员的原因：不是某一个连接独有的，而是整个服务器共享的epoll实例） */
     static int m_user_count;                /* 记录服务器当前活跃连接的总数 */
     MYSQL *mysql;                           /* MySQL连接 */
-    int m_state;                            /* HTTP请求状态：0表示未处理，1表示正在处理，2表示处理完成 */
 
 private:
     int m_sockfd;                            /* 通信的socket */

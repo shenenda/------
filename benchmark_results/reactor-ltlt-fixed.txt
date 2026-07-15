@@ -1,0 +1,12 @@
+Mode: reactor-ltlt (actor=1, trig=0)
+Command: webbench -c 100 -t 30 http://127.0.0.1:9006/
+Smoke: HTTP 200, 6573 bytes
+
+Webbench - Simple Web Benchmark 1.5
+Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.
+
+Benchmarking: GET http://127.0.0.1:9006/
+100 clients, running 30 sec.
+
+Speed=770012 pages/min, 1437366 bytes/sec.
+Requests: 385006 susceed, 0 failed.

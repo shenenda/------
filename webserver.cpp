@@ -2,33 +2,51 @@
 
 WebServer::WebServer()
 {
+    m_root = NULL;
+    m_connPool = NULL;
+    m_pool = NULL;
+    m_epollfd = -1;
+    m_listenfd = -1;
+    m_worker_eventfd = -1;
+    m_pipefd[0] = -1;
+    m_pipefd[1] = -1;
+
     //http_conn类对象
     users = new http_conn[MAX_FD]; //在堆区创建 MAX_FD 个 http_conn 对象，并让 users 指向第一个对象
+    m_connection_generation = new std::uint64_t[MAX_FD]();
 
     //root文件夹路径
     char server_path[200];     //定义当前路径缓冲区
-    getcwd(server_path, 200);  //获取当前工作目录 Current Working Directory
+    if (!getcwd(server_path, sizeof(server_path))) //获取当前工作目录 Current Working Directory
+    {
+        perror("getcwd failed");
+        exit(EXIT_FAILURE);
+    }
     const char root[6] = "/root";
     m_root = static_cast<char*>(malloc(strlen(server_path) + strlen(root) + 1)); //动态分配内存，用于存储根目录路径
     strcpy(m_root, server_path); //将右边的 C 字符串完整复制到左边。
     strcat(m_root, root);        //把右边字符串追加到左边字符串末尾
 
     //定时器
-    users_timer = new client_data[MAX_FD]; //为每一个可能的客户端连接准备一份定时器相关数据
+    users_timer = new client_data[MAX_FD](); //为每一个可能的客户端连接准备一份定时器相关数据
 }
 
 // 可以写一个有参构造函数，然后实现时使用成员初始化列表来实现。这样就可以先解析命令行后，再初始化服务器对象。 */
 
 WebServer::~WebServer()
 {
+    delete m_pool;        //先停止并等待工作线程，防止线程继续访问后续资源
+    m_pool = NULL;
+
     /* 释放内存和资源 */
-    close(m_epollfd);     //关闭 epoll 文件描述符，释放内核资源
-    close(m_listenfd);    //关闭监听套接字文件描述符，释放内核资源
-    close(m_pipefd[1]);   //关闭管道写端，释放内核资源  管道：信号处理函数把信号写进管道，主线程通过epoll监听管道事件，收到信号后再处理
-    close(m_pipefd[0]);   //关闭管道读端，释放内核资源
+    if (m_worker_eventfd >= 0) close(m_worker_eventfd);
+    if (m_epollfd >= 0) close(m_epollfd);     //关闭 epoll 文件描述符，释放内核资源
+    if (m_listenfd >= 0) close(m_listenfd);   //关闭监听套接字文件描述符，释放内核资源
+    if (m_pipefd[1] >= 0) close(m_pipefd[1]); //关闭管道写端，释放内核资源  管道：信号处理函数把信号写进管道，主线程通过epoll监听管道事件，收到信号后再处理
+    if (m_pipefd[0] >= 0) close(m_pipefd[0]); //关闭管道读端，释放内核资源
     delete[] users;       //释放 http_conn 对象数组
     delete[] users_timer; //释放 client_data 对象数组
-    delete m_pool;        //释放线程池对象
+    delete[] m_connection_generation;
     free(m_root);         //释放根目录路径字符串（因为是malloc分配的内存，所以需要手动释放）
 }
 
@@ -118,7 +136,12 @@ void WebServer::sql_pool()
 void WebServer::thread_pool()
 {
     /* 输入参数: 并发模型，数据库连接池，线程池线程数。把线程池实例化为http_conn类型，模板类中原来所以写T的地方的函数任务都被替换成处理接收http_conn类型的函数。  进而，模板类实现了：将通用线程池模具和项目的HTTP业务绑定，变成了专门处理HTTP请求的线程池 */
-    m_pool = new threadpool<http_conn>(m_actormodel, m_connPool, m_thread_num);
+    threadpool<http_conn>::failure_handler on_failure =
+        [this](http_conn *request, std::uint64_t generation)
+        {
+            notify_worker_failure(request, generation);
+        };
+    m_pool = new threadpool<http_conn>(m_actormodel, m_connPool, m_thread_num, 10000, on_failure);
 }
 
 /* 事件监听 */
@@ -164,8 +187,8 @@ void WebServer::eventListen()
         exit(EXIT_FAILURE);
     }
 
-    /* 把普通套接字转为监听套接字   监听队列长度为5，是已完成三次握手、等待 accept 处理的连接队列的最大长度。高并发场景会调大这个值。 */
-    if (listen(m_listenfd, 5) < 0) {
+    /* 把普通套接字转为监听套接字。高并发下使用系统允许的最大完成连接队列，避免 backlog=5 造成瞬时拒绝。 */
+    if (listen(m_listenfd, SOMAXCONN) < 0) {
         perror("Listen failed");
         close(m_listenfd);
         exit(EXIT_FAILURE);
@@ -194,6 +217,13 @@ void WebServer::eventListen()
     utils.setnonblocking(m_pipefd[1]);              /* 将管道的写端设置为非阻塞模式，信号处理函数写管道时，如果管道满了不会阻塞，避免信号处理函数卡住 */
     utils.addfd(m_epollfd, m_pipefd[0], false, 0);  /* 将管道的读端添加到 epoll 实例中，用于监听信号，有信号写入时epoll就能检测到 */
 
+    m_worker_eventfd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+    if (m_worker_eventfd == -1) {
+        perror("eventfd creation failed");
+        exit(EXIT_FAILURE);
+    }
+    utils.addfd(m_epollfd, m_worker_eventfd, false, 0); /* 工作线程只报告失败，主线程负责关闭连接和删除定时器 */
+
     utils.addsig(SIGPIPE, SIG_IGN); /*当客户端异常断开后，服务器还往 socket 写数据时，会收到这个信号，默认行为是直接终止进程。服务器必须忽略它，防止因为一个客户端掉线导致整个服务崩溃*/
     utils.addsig(SIGALRM, utils.sig_handler, false);/*闹钟超时信号，由 alarm 函数触发，用来驱动定时器，周期性清理超时连接*/
     utils.addsig(SIGTERM, utils.sig_handler, false);/*进程终止信号（比如 kill 命令默认发送的信号），收到后通知服务器优雅退出*/
@@ -207,6 +237,11 @@ void WebServer::eventListen()
 
 void WebServer::timer(int connfd, struct sockaddr_in client_address)
 {
+    ++m_connection_generation[connfd];
+    if (m_connection_generation[connfd] == 0) {
+        ++m_connection_generation[connfd];
+    }
+
     /*初始化http连接，user数组中的每一个元素，都对应一个可能的客户端连接*/
     users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode, m_close_log, m_user, m_passWord, m_databaseName);
 
@@ -238,13 +273,14 @@ void WebServer::adjust_timer(util_timer *timer)
 当某个连接判定为超时（或出错需要主动关闭）时，执行超时回调回收连接资源，再把定时器从全局链表中移除，同时打印日志记录。 */
 void WebServer::deal_timer(util_timer *timer, int sockfd)
 {
-    timer->cb_func(&users_timer[sockfd]); //传入 &users_timer[sockfd] 是因为回调函数自身不知道要关闭哪个连接，通过用户数据可以拿到 sockfd、客户端地址等全部信息
-    if (timer)
-    {
-        utils.m_timer_lst.del_timer(timer);
-    }
+    if (!timer) return;
 
-    LOG_INFO("close fd %d", users_timer[sockfd].sockfd);
+    const int closed_fd = users_timer[sockfd].sockfd;
+    timer->cb_func(&users_timer[sockfd]); //传入 &users_timer[sockfd] 是因为回调函数自身不知道要关闭哪个连接，通过用户数据可以拿到 sockfd、客户端地址等全部信息
+    users_timer[sockfd].timer = NULL;
+    utils.m_timer_lst.del_timer(timer);
+
+    LOG_INFO("close fd %d", closed_fd);
 }
 
 /*处理新客户端连接请求  当监听套接字 m_listenfd 上有新连接事件触发时，调用此函数执行 accept 接收新连接，并完成连接初始化与定时器绑定*/
@@ -300,7 +336,6 @@ bool WebServer::dealclientdata()
 bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
 {
     int ret = 0;
-    int sig;
     char signals[1024]; //读取缓冲区。信号处理函数会把信号编号（如 SIGALRM、SIGTERM 的整数值）作为单个字节写入管道，这里用来批量接收
     ret = recv(m_pipefd[0], signals, sizeof(signals), 0); //从管道读端 m_pipefd[0] 读取数据
     if (ret == -1) //读取出错
@@ -333,12 +368,69 @@ bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
     return true;
 }
 
+void WebServer::notify_worker_failure(http_conn *request, std::uint64_t generation)
+{
+    const std::ptrdiff_t index = request - users;
+    if (index < 0 || index >= MAX_FD || m_worker_eventfd < 0)
+    {
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(m_worker_failure_mutex);
+        worker_failure failure = {static_cast<int>(index), generation};
+        m_worker_failures.push(failure);
+    }
+
+    const std::uint64_t one = 1;
+    if (write(m_worker_eventfd, &one, sizeof(one)) == -1 && errno != EAGAIN)
+    {
+        LOG_ERROR("worker eventfd write failed: %s", strerror(errno));
+    }
+}
+
+void WebServer::dealwithworkerfailure()
+{
+    std::uint64_t notifications = 0;
+    while (read(m_worker_eventfd, &notifications, sizeof(notifications)) == sizeof(notifications))
+    {
+    }
+    if (errno != EAGAIN && errno != EWOULDBLOCK)
+    {
+        LOG_ERROR("worker eventfd read failed: %s", strerror(errno));
+    }
+
+    std::queue<worker_failure> failures;
+    {
+        std::lock_guard<std::mutex> lock(m_worker_failure_mutex);
+        failures.swap(m_worker_failures);
+    }
+
+    while (!failures.empty())
+    {
+        const worker_failure failure = failures.front();
+        failures.pop();
+
+        if (failure.sockfd < 0 || failure.sockfd >= MAX_FD ||
+            m_connection_generation[failure.sockfd] != failure.generation)
+        {
+            continue;
+        }
+
+        util_timer *timer = users_timer[failure.sockfd].timer;
+        if (timer)
+        {
+            deal_timer(timer, failure.sockfd);
+        }
+    }
+}
+
 /*处理客户端读就绪事件  当 epoll 检测到某个客户端 socket 有数据可读时触发，根据配置的并发模型（Reactor / Proactor），以不同的分工方式读取客户端数据、投递业务任务、刷新超时定时器*/
 void WebServer::dealwithread(int sockfd)
 {
     util_timer *timer = users_timer[sockfd].timer; //执行前先取出该连接对应的定时器，后续要么刷新它的超时时间（活跃连接），要么触发它关闭连接（出错 / 断开）
 
-    //reactor 工作线程负责IO读写+业务处理，主线程只负责事件分发和结果同步
+    //reactor 工作线程负责IO读写+业务处理，主线程只负责事件分发和失败清理
     if (1 == m_actormodel)
     {
         if (timer)
@@ -346,21 +438,10 @@ void WebServer::dealwithread(int sockfd)
             adjust_timer(timer); //先刷新定时器：有数据交互说明连接是活跃的，把超时时间往后顺延 3 个时间片，重置超时倒计时
         }
 
-        //若监测到读事件，将该事件放入请求队列
-        m_pool->append(users + sockfd, 0); //users + sockfd 等价于 &users[sockfd]，指向该连接对应的 http_conn 对象。  第二个参数 0 是任务状态标记，告诉工作线程：这是读事件，需要你执行 read_once() 读取数据
-
-        while (true) //主线程自旋等待工作线程处理完成，通过共享标志位同步状态
+        //若监测到读事件，将该事件放入请求队列。成功路径由工作线程重置 EPOLLONESHOT，主线程不再等待
+        if (!m_pool->append(users + sockfd, 0, m_connection_generation[sockfd]))
         {
-            if (1 == users[sockfd].improv) //improv == 1：工作线程已经处理完本次任务（无论成功失败）
-            {
-                if (1 == users[sockfd].timer_flag) //检查 timer_flag：如果为 1，说明读操作失败（客户端断开、出错）
-                {
-                    deal_timer(timer, sockfd); //调用 deal_timer 关闭连接、移除定时器
-                    users[sockfd].timer_flag = 0;
-                }
-                users[sockfd].improv = 0; //重置 improv 标志位，跳出等待循环
-                break;
-            }
+            deal_timer(timer, sockfd);
         }
     }
     else
@@ -371,7 +452,11 @@ void WebServer::dealwithread(int sockfd)
             LOG_INFO("deal with the client(%s)", inet_ntoa(users[sockfd].get_address()->sin_addr));
 
             //若监测到读事件，将该事件放入请求队列
-            m_pool->append_p(users + sockfd); // 把业务任务投到线程池 —— 不需要状态参数，因为 IO 已经做完了，工作线程直接执行 process() 解析请求、生成响应即可
+            if (!m_pool->append_p(users + sockfd, m_connection_generation[sockfd])) // 把业务任务投到线程池 —— IO 已经做完，工作线程直接执行 process()
+            {
+                deal_timer(timer, sockfd);
+                return;
+            }
 
             if (timer)
             {
@@ -389,7 +474,7 @@ void WebServer::dealwithread(int sockfd)
 void WebServer::dealwithwrite(int sockfd)
 {
     util_timer *timer = users_timer[sockfd].timer; ////执行前先取出该连接对应的定时器，后续要么刷新它的超时时间（活跃连接），要么触发它关闭连接（出错 / 断开）
-    //reactor模式下通过 improv、timer_flag 两个共享标志位，在主线程和工作线程之间同步任务处理结果，是简单高效的线程间通信方式。
+    //reactor 模式下工作线程执行 write()；只有关闭连接时才通过 eventfd 通知主线程清理定时器。
     if (1 == m_actormodel)
     {
         if (timer)
@@ -397,20 +482,9 @@ void WebServer::dealwithwrite(int sockfd)
             adjust_timer(timer);
         }
 
-        m_pool->append(users + sockfd, 1); //投递任务到线程池，状态参数 1 表示「写事件」，工作线程会执行 write() 把响应数据发回客户端
-
-        while (true) //和读事件完全一致：主线程自旋等待工作线程处理完成，根据 timer_flag 判断是否出错，出错则关闭连接。
+        if (!m_pool->append(users + sockfd, 1, m_connection_generation[sockfd])) //状态参数 1 表示「写事件」
         {
-            if (1 == users[sockfd].improv)
-            {
-                if (1 == users[sockfd].timer_flag)
-                {
-                    deal_timer(timer, sockfd);
-                    users[sockfd].timer_flag = 0;
-                }
-                users[sockfd].improv = 0;
-                break;
-            }
+            deal_timer(timer, sockfd);
         }
     }
     else
@@ -464,19 +538,26 @@ void WebServer::eventLoop()
                 if (false == flag)
                     continue; //LT 下多表示处理失败；ET 分支处理完 accept 循环后也会返回 false，用于结束当前分支
             }
-            //连接异常/断开事件 ： 服务器自动清理异常连接的重要机制，避免无效连接长期占用资源
-            else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
-            {
-                //服务器端关闭连接，移除对应的定时器
-                util_timer *timer = users_timer[sockfd].timer;
-                deal_timer(timer, sockfd);
-            }
             //处理信号事件（统一事件源）：信号也变成了 epoll 里的 IO 事件，在主循环同步处理，彻底避免异步竞态
             else if ((sockfd == m_pipefd[0]) && (events[i].events & EPOLLIN)) //触发条件：管道读端有数据可读，说明信号处理函数往管道里写入了信号值
             {
                 bool flag = dealwithsignal(timeout, stop_server); //处理逻辑：调用 dealwithsignal 读取管道里的信号，通过引用参数修改 timeout 和 stop_server 两个标记，把异步信号转成同步的状态标志，交给循环后续统一处理
                 if (false == flag)
                     LOG_ERROR("%s", "dealwithsignal failure");
+            }
+            else if ((sockfd == m_worker_eventfd) && (events[i].events & EPOLLIN))
+            {
+                dealwithworkerfailure();
+            }
+            //连接异常/断开事件 ： 服务器自动清理异常连接的重要机制，避免无效连接长期占用资源
+            else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
+            {
+                //服务器端关闭连接，移除对应的定时器
+                util_timer *timer = users_timer[sockfd].timer;
+                if (timer)
+                {
+                    deal_timer(timer, sockfd);
+                }
             }
             //处理客户连接上接收到的数据，客户端读就绪事件
             else if (events[i].events & EPOLLIN) //触发条件：某个客户端连接的 socket 有数据可读，客户端发来了 HTTP 请求数据
