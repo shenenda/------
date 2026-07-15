@@ -3,8 +3,8 @@
 int main(int argc, char *argv[])
 {
     /* 需要修改的数据库信息,登录名,密码,库名 */
-    string user = "root";
-    string passwd = "Aa111222!";
+    string user = "webserver";
+    string passwd = "126634";
     string databasename = "yourdb";
 
     Config config;
