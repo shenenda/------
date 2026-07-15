@@ -1,0 +1,17 @@
+name=official-reactor-etet
+official_commit=4bcf88762f85135e9bd46a1032e815e458de6f2e
+source_diff=3,3,main.cpp
+build_command=g++ official sources -g -lpthread -lmysqlclient
+host=didida
+kernel=5.15.0-142-generic
+logical_cpus=2
+actor=1
+trigger=3
+server_command=./server -p 9016 -a 1 -m 3 -c 1
+benchmark_command=webbench -c 100 -t 30 http://127.0.0.1:9016/
+pre_smoke=200,586
+post_smoke=200,586
+server_alive_after_benchmark=yes
+server_cpu_percent_over_interval=116.87
+webbench_exit_code=159
+webbench_result_complete=yes

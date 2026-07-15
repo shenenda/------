@@ -1,0 +1,8 @@
+Webbench - Simple Web Benchmark 1.5
+Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.
+
+Benchmarking: GET http://127.0.0.1:9016/
+100 clients, running 30 sec.
+
+Speed=1021364 pages/min, 1906546 bytes/sec.
+Requests: 510682 susceed, 0 failed.
