@@ -1,0 +1,201 @@
+000000000000dec0 <WebServer::dealwithwrite(int)>:
+    dec0:	endbr64
+    dec4:	push   %r15
+    dec6:	push   %r14
+    dec8:	push   %r13
+    deca:	push   %r12
+    decc:	push   %rbp
+    decd:	mov    %rdi,%rbp
+    ded0:	push   %rbx
+    ded1:	movslq %esi,%rbx
+    ded4:	mov    %rbx,%rax
+    ded7:	imul   $0xf70,%rbx,%r13
+    dede:	mov    %rbx,%r12
+    dee1:	shl    $0x5,%rax
+    dee5:	sub    $0x8,%rsp
+    dee9:	add    0x1d608(%rdi),%rax
+    def0:	cmpl   $0x1,0x18(%rdi)
+    def4:	mov    0x18(%rax),%r14
+    def8:	jne    df60 <WebServer::dealwithwrite(int)+0xa0>
+    defa:	test   %r14,%r14
+    defd:	je     df07 <WebServer::dealwithwrite(int)+0x47>
+    deff:	mov    %r14,%rsi
+    df02:	call   cea0 <WebServer::adjust_timer(util_timer*)>
+    df07:	mov    0x38(%rbp),%rax
+    df0b:	mov    0x30(%rbp),%rsi
+    df0f:	mov    $0x1,%edx
+    df14:	mov    0x128(%rbp),%rdi
+    df1b:	mov    (%rax,%rbx,8),%rcx
+    df1f:	add    %r13,%rsi
+    df22:	call   f450 <threadpool<http_conn>::append(http_conn*, int, unsigned long)>
+    df27:	test   %al,%al
+    df29:	je     df40 <WebServer::dealwithwrite(int)+0x80>
+    df2b:	add    $0x8,%rsp
+    df2f:	pop    %rbx
+    df30:	pop    %rbp
+    df31:	pop    %r12
+    df33:	pop    %r13
+    df35:	pop    %r14
+    df37:	pop    %r15
+    df39:	ret
+    df3a:	nopw   0x0(%rax,%rax,1)
+    df40:	add    $0x8,%rsp
+    df44:	mov    %r12d,%edx
+    df47:	mov    %r14,%rsi
+    df4a:	mov    %rbp,%rdi
+    df4d:	pop    %rbx
+    df4e:	pop    %rbp
+    df4f:	pop    %r12
+    df51:	pop    %r13
+    df53:	pop    %r14
+    df55:	pop    %r15
+    df57:	jmp    d030 <WebServer::deal_timer(util_timer*, int)>
+    df5c:	nopl   0x0(%rax)
+    df60:	mov    0x30(%rdi),%rdi
+    df64:	add    %r13,%rdi
+    df67:	call   7a70 <http_conn::write()>
+    df6c:	test   %al,%al
+    df6e:	je     df40 <WebServer::dealwithwrite(int)+0x80>
+    df70:	movzbl 0x8319(%rip),%eax        # 16290 <guard variable for Log::get_instance()::instance>
+    df77:	lea    0x8322(%rip),%r12        # 162a0 <Log::get_instance()::instance>
+    df7e:	test   %al,%al
+    df80:	je     e000 <WebServer::dealwithwrite(int)+0x140>
+    df82:	mov    0x8480(%rip),%eax        # 16408 <Log::get_instance()::instance+0x168>
+    df88:	test   %eax,%eax
+    df8a:	je     dfb0 <WebServer::dealwithwrite(int)+0xf0>
+    df8c:	test   %r14,%r14
+    df8f:	je     df2b <WebServer::dealwithwrite(int)+0x6b>
+    df91:	add    $0x8,%rsp
+    df95:	mov    %r14,%rsi
+    df98:	mov    %rbp,%rdi
+    df9b:	pop    %rbx
+    df9c:	pop    %rbp
+    df9d:	pop    %r12
+    df9f:	pop    %r13
+    dfa1:	pop    %r14
+    dfa3:	pop    %r15
+    dfa5:	jmp    cea0 <WebServer::adjust_timer(util_timer*)>
+    dfaa:	nopw   0x0(%rax,%rax,1)
+    dfb0:	movzbl 0x82d9(%rip),%eax        # 16290 <guard variable for Log::get_instance()::instance>
+    dfb7:	test   %al,%al
+    dfb9:	je     e090 <WebServer::dealwithwrite(int)+0x1d0>
+    dfbf:	mov    0x30(%rbp),%rax
+    dfc3:	mov    0x10(%rax,%r13,1),%edi
+    dfc8:	call   4a30 <inet_ntoa@plt>
+    dfcd:	lea    0x38a0(%rip),%rdx        # 11874 <typeinfo name for Log+0x1df>
+    dfd4:	mov    $0x1,%esi
+    dfd9:	mov    %r12,%rdi
+    dfdc:	mov    %rax,%rcx
+    dfdf:	xor    %eax,%eax
+    dfe1:	call   ae80 <Log::write_log(int, char const*, ...)>
+    dfe6:	movzbl 0x82a3(%rip),%eax        # 16290 <guard variable for Log::get_instance()::instance>
+    dfed:	test   %al,%al
+    dfef:	je     e050 <WebServer::dealwithwrite(int)+0x190>
+    dff1:	mov    %r12,%rdi
+    dff4:	call   b600 <Log::flush()>
+    dff9:	jmp    df8c <WebServer::dealwithwrite(int)+0xcc>
+    dffb:	nopl   0x0(%rax,%rax,1)
+    e000:	lea    0x8289(%rip),%r15        # 16290 <guard variable for Log::get_instance()::instance>
+    e007:	lea    0x8292(%rip),%r12        # 162a0 <Log::get_instance()::instance>
+    e00e:	mov    %r15,%rdi
+
+000000000000e100 <WebServer::dealwithread(int)>:
+    e100:	endbr64
+    e104:	push   %r15
+    e106:	push   %r14
+    e108:	push   %r13
+    e10a:	movslq %esi,%r13
+    e10d:	push   %r12
+    e10f:	mov    %r13,%rax
+    e112:	mov    %r13,%r12
+    e115:	push   %rbp
+    e116:	shl    $0x5,%rax
+    e11a:	mov    %rdi,%rbp
+    e11d:	push   %rbx
+    e11e:	imul   $0xf70,%r13,%rbx
+    e125:	sub    $0x18,%rsp
+    e129:	add    0x1d608(%rdi),%rax
+    e130:	cmpl   $0x1,0x18(%rdi)
+    e134:	mov    0x18(%rax),%r14
+    e138:	jne    e180 <WebServer::dealwithread(int)+0x80>
+    e13a:	test   %r14,%r14
+    e13d:	je     e147 <WebServer::dealwithread(int)+0x47>
+    e13f:	mov    %r14,%rsi
+    e142:	call   cea0 <WebServer::adjust_timer(util_timer*)>
+    e147:	mov    0x38(%rbp),%rax
+    e14b:	add    0x30(%rbp),%rbx
+    e14f:	xor    %edx,%edx
+    e151:	mov    0x128(%rbp),%rdi
+    e158:	mov    %rbx,%rsi
+    e15b:	mov    (%rax,%r13,8),%rcx
+    e15f:	call   f450 <threadpool<http_conn>::append(http_conn*, int, unsigned long)>
+    e164:	test   %al,%al
+    e166:	je     e1cf <WebServer::dealwithread(int)+0xcf>
+    e168:	add    $0x18,%rsp
+    e16c:	pop    %rbx
+    e16d:	pop    %rbp
+    e16e:	pop    %r12
+    e170:	pop    %r13
+    e172:	pop    %r14
+    e174:	pop    %r15
+    e176:	ret
+    e177:	nopw   0x0(%rax,%rax,1)
+    e180:	mov    0x30(%rdi),%rdi
+    e184:	add    %rbx,%rdi
+    e187:	call   73d0 <http_conn::read_once()>
+    e18c:	test   %al,%al
+    e18e:	je     e1cf <WebServer::dealwithread(int)+0xcf>
+    e190:	movzbl 0x80f9(%rip),%eax        # 16290 <guard variable for Log::get_instance()::instance>
+    e197:	lea    0x8102(%rip),%r15        # 162a0 <Log::get_instance()::instance>
+    e19e:	test   %al,%al
+    e1a0:	je     e268 <WebServer::dealwithread(int)+0x168>
+    e1a6:	mov    0x825c(%rip),%eax        # 16408 <Log::get_instance()::instance+0x168>
+    e1ac:	test   %eax,%eax
+    e1ae:	je     e218 <WebServer::dealwithread(int)+0x118>
+    e1b0:	mov    0x38(%rbp),%rax
+    e1b4:	add    0x30(%rbp),%rbx
+    e1b8:	mov    0x128(%rbp),%rdi
+    e1bf:	mov    %rbx,%rsi
+    e1c2:	mov    (%rax,%r13,8),%rdx
+    e1c6:	call   f6f0 <threadpool<http_conn>::append_p(http_conn*, unsigned long)>
+    e1cb:	test   %al,%al
+    e1cd:	jne    e1f0 <WebServer::dealwithread(int)+0xf0>
+    e1cf:	add    $0x18,%rsp
+    e1d3:	mov    %r12d,%edx
+    e1d6:	mov    %r14,%rsi
+    e1d9:	mov    %rbp,%rdi
+    e1dc:	pop    %rbx
+    e1dd:	pop    %rbp
+    e1de:	pop    %r12
+    e1e0:	pop    %r13
+    e1e2:	pop    %r14
+    e1e4:	pop    %r15
+    e1e6:	jmp    d030 <WebServer::deal_timer(util_timer*, int)>
+    e1eb:	nopl   0x0(%rax,%rax,1)
+    e1f0:	test   %r14,%r14
+    e1f3:	je     e168 <WebServer::dealwithread(int)+0x68>
+    e1f9:	add    $0x18,%rsp
+    e1fd:	mov    %r14,%rsi
+    e200:	mov    %rbp,%rdi
+    e203:	pop    %rbx
+    e204:	pop    %rbp
+    e205:	pop    %r12
+    e207:	pop    %r13
+    e209:	pop    %r14
+    e20b:	pop    %r15
+    e20d:	jmp    cea0 <WebServer::adjust_timer(util_timer*)>
+    e212:	nopw   0x0(%rax,%rax,1)
+    e218:	movzbl 0x8071(%rip),%eax        # 16290 <guard variable for Log::get_instance()::instance>
+    e21f:	test   %al,%al
+    e221:	je     e310 <WebServer::dealwithread(int)+0x210>
+    e227:	mov    0x30(%rbp),%rax
+    e22b:	mov    0x10(%rax,%rbx,1),%edi
+    e22f:	call   4a30 <inet_ntoa@plt>
+    e234:	lea    0x3655(%rip),%rdx        # 11890 <typeinfo name for Log+0x1fb>
+    e23b:	mov    $0x1,%esi
+    e240:	mov    %r15,%rdi
+    e243:	mov    %rax,%rcx
+    e246:	xor    %eax,%eax
+    e248:	call   ae80 <Log::write_log(int, char const*, ...)>
+    e24d:	movzbl 0x803c(%rip),%eax        # 16290 <guard variable for Log::get_instance()::instance>
+    e254:	test   %al,%al

@@ -1,0 +1,6 @@
+run_at=2026-07-16T08:37:19+08:00
+official_repo=https://github.com/qinguoyi/TinyWebServer.git
+official_commit=4bcf88762f85135e9bd46a1032e815e458de6f2e
+source_diff=main.cpp: database credentials only
+build_command=g++ -std=c++11 -O2 -Wall main.cpp timer/lst_timer.cpp http/http_conn.cpp log/log.cpp CGImysql/sql_connection_pool.cpp webserver.cpp config.cpp -o server -pthread $DB_FLAGS
+db_flags=-I/usr/include/mysql -L/usr/lib/x86_64-linux-gnu -lmysqlclient -lzstd -lssl -lcrypto -lresolv -lm

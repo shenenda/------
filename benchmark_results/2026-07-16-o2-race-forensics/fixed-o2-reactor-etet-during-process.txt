@@ -1,0 +1,13 @@
+2026-07-16T08:12:34,890360549+08:00
+    PID     TID PSR %CPU STAT WCHAN                        COMMAND
+ 133462  133462   1 37.8 Rl   -                            server-fixed-o2
+ 133462  133466   0  4.0 Sl   futex_wait_queue_me          server-fixed-o2
+ 133462  133467   0  4.0 Sl   futex_wait_queue_me          server-fixed-o2
+ 133462  133468   0  4.0 Sl   futex_wait_queue_me          server-fixed-o2
+ 133462  133469   0  4.0 Sl   futex_wait_queue_me          server-fixed-o2
+ 133462  133470   0  4.0 Sl   futex_wait_queue_me          server-fixed-o2
+ 133462  133471   0  4.2 Sl   futex_wait_queue_me          server-fixed-o2
+ 133462  133472   0  4.2 Sl   futex_wait_queue_me          server-fixed-o2
+ 133462  133473   0  4.6 Sl   futex_wait_queue_me          server-fixed-o2
+
+tid=133462 wchan=0tid=133466 wchan=futex_wait_queue_metid=133467 wchan=futex_wait_queue_metid=133468 wchan=futex_wait_queue_metid=133469 wchan=futex_wait_queue_metid=133470 wchan=futex_wait_queue_metid=133471 wchan=futex_wait_queue_metid=133472 wchan=futex_wait_queue_metid=133473 wchan=futex_wait_queue_me

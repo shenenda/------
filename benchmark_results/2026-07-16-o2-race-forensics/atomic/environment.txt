@@ -1,0 +1,6 @@
+run_at=2026-07-16T08:27:16+08:00
+source_repo=/root/myWebserver_didida
+baseline_commit=a57a275b4866cbc309f51f00da24dcc081030775
+source_diff=3,2,http/http_conn.h
+build_command=g++ -std=c++11 -O2 -Wall historical sources with atomic flags
+db_flags=-I/usr/include/mysql -L/usr/lib/x86_64-linux-gnu -lmysqlclient -lzstd -lssl -lcrypto -lresolv -lm

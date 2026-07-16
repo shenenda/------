@@ -1,0 +1,6 @@
+run_at=2026-07-16T08:08:34+08:00
+source_repo=/root/myWebserver_didida
+baseline_commit=a57a275b4866cbc309f51f00da24dcc081030775
+fixed_commit=8d225cb523a92472e3141bed542a29eb53879ec1
+historical_build_command=g++ -std=c++11 -O2 -Wall main.cpp timer/lst_timer.cpp http/http_conn.cpp log/log.cpp CGImysql/sql_connection_pool.cpp webserver.cpp config.cpp -o server -pthread $DB_FLAGS
+db_flags=-I/usr/include/mysql -L/usr/lib/x86_64-linux-gnu -lmysqlclient -lzstd -lssl -lcrypto -lresolv -lm

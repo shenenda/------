@@ -1,0 +1,35 @@
+Linux 5.15.0-142-generic (didida) 	07/16/2026 	_x86_64_	(2 CPU)
+
+# Time        UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+08:37:20 AM     0    135653    0.00    0.00    0.00    0.00    0.00     1  server-official
+08:37:21 AM     0    135653    0.00    1.00    0.00    0.00    1.00     0  server-official
+08:37:22 AM     0    135653    0.00    0.00    0.00    1.00    0.00     0  server-official
+08:37:23 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:24 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:25 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:26 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:27 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:28 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:29 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:30 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:31 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:32 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:33 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:34 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:35 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:36 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:37 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:38 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:39 AM     0    135653    0.00    1.00    0.00    0.00    1.00     0  server-official
+08:37:40 AM     0    135653    0.00    0.00    0.00    0.00    0.00     1  server-official
+08:37:41 AM     0    135653    0.00    0.00    0.00    0.00    0.00     1  server-official
+08:37:42 AM     0    135653    0.00    0.00    0.00    0.00    0.00     1  server-official
+08:37:43 AM     0    135653    0.00    0.00    0.00    0.00    0.00     1  server-official
+08:37:44 AM     0    135653    0.00    0.00    0.00    0.00    0.00     1  server-official
+08:37:45 AM     0    135653    0.00    0.00    0.00    0.00    0.00     1  server-official
+08:37:46 AM     0    135653    0.00    0.00    0.00    0.00    0.00     1  server-official
+08:37:47 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:48 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:49 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:50 AM     0    135653    0.00    0.00    0.00    0.00    0.00     0  server-official
+08:37:51 AM     0    135653    0.00    1.00    0.00    2.00    1.00     0  server-official

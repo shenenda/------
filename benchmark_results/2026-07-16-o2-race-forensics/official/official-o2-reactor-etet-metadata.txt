@@ -1,0 +1,17 @@
+label=official-o2-reactor-etet
+source_commit=4bcf88762f85135e9bd46a1032e815e458de6f2e
+source_diff=main.cpp: database credentials only
+build_kind=official-O2
+compiler=g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+host=didida
+kernel=5.15.0-142-generic
+logical_cpus=2
+actor=1
+trigger=3
+server_command=/tmp/official-o2-race-forensics/official/server-official-o2 -p 9026 -a 1 -m 3 -c 1
+benchmark_command=/root/myWebserver_didida/test_pressure/webbench-1.5/webbench -c 100 -t 30 http://127.0.0.1:9026/
+pre_smoke=200,586
+post_smoke=200,586
+server_cpu_percent_over_interval=0.16
+webbench_exit_code=2
+webbench_result_complete=yes

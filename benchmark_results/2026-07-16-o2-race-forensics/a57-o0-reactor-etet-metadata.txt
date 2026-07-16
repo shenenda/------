@@ -1,0 +1,17 @@
+label=a57-o0-reactor-etet
+source_commit=a57a275b4866cbc309f51f00da24dcc081030775
+source_diff=
+build_kind=O0-control
+compiler=g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+host=didida
+kernel=5.15.0-142-generic
+logical_cpus=2
+actor=1
+trigger=3
+server_command=/tmp/reactor-o2-race-forensics/baseline/server-a57-o0 -p 9026 -a 1 -m 3 -c 1
+benchmark_command=/root/myWebserver_didida/test_pressure/webbench-1.5/webbench -c 100 -t 30 http://127.0.0.1:9026/
+pre_smoke=200,6573
+post_smoke=200,6573
+server_cpu_percent_over_interval=117.11
+webbench_exit_code=122
+webbench_result_complete=yes

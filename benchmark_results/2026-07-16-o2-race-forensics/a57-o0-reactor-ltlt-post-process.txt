@@ -1,0 +1,13 @@
+2026-07-16T08:09:06,866342178+08:00
+    PID     TID PSR %CPU STAT WCHAN                        COMMAND
+ 132029  132029   1 86.6 Sl   ep_poll                      server-a57-o0
+ 132029  132035   1  3.6 Sl   futex_wait_queue_me          server-a57-o0
+ 132029  132036   1  3.7 Sl   futex_wait_queue_me          server-a57-o0
+ 132029  132037   1  3.7 Sl   futex_wait_queue_me          server-a57-o0
+ 132029  132038   1  3.7 Sl   futex_wait_queue_me          server-a57-o0
+ 132029  132039   0  3.6 Sl   futex_wait_queue_me          server-a57-o0
+ 132029  132040   1  3.6 Sl   futex_wait_queue_me          server-a57-o0
+ 132029  132041   1  3.6 Sl   futex_wait_queue_me          server-a57-o0
+ 132029  132042   0  3.6 Sl   futex_wait_queue_me          server-a57-o0
+
+tid=132029 wchan=ep_polltid=132035 wchan=futex_wait_queue_metid=132036 wchan=futex_wait_queue_metid=132037 wchan=futex_wait_queue_metid=132038 wchan=futex_wait_queue_metid=132039 wchan=futex_wait_queue_metid=132040 wchan=futex_wait_queue_metid=132041 wchan=futex_wait_queue_metid=132042 wchan=futex_wait_queue_me

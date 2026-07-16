@@ -1,0 +1,13 @@
+2026-07-16T08:37:24,517034013+08:00
+    PID     TID PSR %CPU STAT WCHAN                        COMMAND
+ 135653  135653   0  4.8 Sl   ep_poll                      server-official
+ 135653  135659   1  0.0 Sl   futex_wait_queue_me          server-official
+ 135653  135660   1  0.0 Sl   futex_wait_queue_me          server-official
+ 135653  135661   0  0.0 Sl   futex_wait_queue_me          server-official
+ 135653  135662   1  0.0 Sl   futex_wait_queue_me          server-official
+ 135653  135663   0  0.0 Sl   futex_wait_queue_me          server-official
+ 135653  135664   0  0.0 Sl   futex_wait_queue_me          server-official
+ 135653  135665   0  0.0 Sl   futex_wait_queue_me          server-official
+ 135653  135666   0  0.0 Sl   futex_wait_queue_me          server-official
+
+tid=135653 wchan=ep_polltid=135659 wchan=futex_wait_queue_metid=135660 wchan=futex_wait_queue_metid=135661 wchan=futex_wait_queue_metid=135662 wchan=futex_wait_queue_metid=135663 wchan=futex_wait_queue_metid=135664 wchan=futex_wait_queue_metid=135665 wchan=futex_wait_queue_metid=135666 wchan=futex_wait_queue_me

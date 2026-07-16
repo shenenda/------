@@ -1,0 +1,106 @@
+[New LWP 133045]
+[New LWP 133046]
+[New LWP 133047]
+[New LWP 133048]
+[New LWP 133049]
+[New LWP 133050]
+[New LWP 133051]
+[New LWP 133052]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+0x00007f74db779eae in epoll_wait (epfd=12, events=0x7fff29a7072c, maxevents=10000, timeout=-1) at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+30	../sysdeps/unix/sysv/linux/epoll_wait.c: No such file or directory.
+
+Thread 9 (Thread 0x7f74c7e11640 (LWP 133052) "server-a57-o2-v"):
+#0  __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=<optimized out>, abstime=0x0, clockid=0, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x55b246aac3c0, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=<optimized out>) at ./nptl/futex-internal.c:139
+#3  0x00007f74db6f0bdf in do_futex_wait (sem=sem@entry=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:111
+#4  0x00007f74db6f0c78 in __new_sem_wait_slow64 (sem=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:183
+#5  0x000055b24327eb9a in threadpool<http_conn>::run() ()
+#6  0x000055b24327ee5e in threadpool<http_conn>::worker(void*) ()
+#7  0x00007f74db6e8ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#8  0x00007f74db77a8d0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 8 (Thread 0x7f74c8612640 (LWP 133051) "server-a57-o2-v"):
+#0  __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=<optimized out>, abstime=0x0, clockid=0, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x55b246aac3c0, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=<optimized out>) at ./nptl/futex-internal.c:139
+#3  0x00007f74db6f0bdf in do_futex_wait (sem=sem@entry=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:111
+#4  0x00007f74db6f0c78 in __new_sem_wait_slow64 (sem=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:183
+#5  0x000055b24327eb9a in threadpool<http_conn>::run() ()
+#6  0x000055b24327ee5e in threadpool<http_conn>::worker(void*) ()
+#7  0x00007f74db6e8ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#8  0x00007f74db77a8d0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 7 (Thread 0x7f74c8e13640 (LWP 133050) "server-a57-o2-v"):
+#0  __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=<optimized out>, abstime=0x0, clockid=0, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x55b246aac3c0, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=<optimized out>) at ./nptl/futex-internal.c:139
+#3  0x00007f74db6f0bdf in do_futex_wait (sem=sem@entry=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:111
+#4  0x00007f74db6f0c78 in __new_sem_wait_slow64 (sem=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:183
+#5  0x000055b24327eb9a in threadpool<http_conn>::run() ()
+#6  0x000055b24327ee5e in threadpool<http_conn>::worker(void*) ()
+#7  0x00007f74db6e8ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#8  0x00007f74db77a8d0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 6 (Thread 0x7f74c9614640 (LWP 133049) "server-a57-o2-v"):
+#0  __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=<optimized out>, abstime=0x0, clockid=0, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x55b246aac3c0, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=<optimized out>) at ./nptl/futex-internal.c:139
+#3  0x00007f74db6f0bdf in do_futex_wait (sem=sem@entry=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:111
+#4  0x00007f74db6f0c78 in __new_sem_wait_slow64 (sem=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:183
+#5  0x000055b24327eb9a in threadpool<http_conn>::run() ()
+#6  0x000055b24327ee5e in threadpool<http_conn>::worker(void*) ()
+#7  0x00007f74db6e8ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#8  0x00007f74db77a8d0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 5 (Thread 0x7f74c9e15640 (LWP 133048) "server-a57-o2-v"):
+#0  __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=<optimized out>, abstime=0x0, clockid=0, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x55b246aac3c0, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=<optimized out>) at ./nptl/futex-internal.c:139
+#3  0x00007f74db6f0bdf in do_futex_wait (sem=sem@entry=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:111
+#4  0x00007f74db6f0c78 in __new_sem_wait_slow64 (sem=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:183
+#5  0x000055b24327eb9a in threadpool<http_conn>::run() ()
+#6  0x000055b24327ee5e in threadpool<http_conn>::worker(void*) ()
+#7  0x00007f74db6e8ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#8  0x00007f74db77a8d0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 4 (Thread 0x7f74ca616640 (LWP 133047) "server-a57-o2-v"):
+#0  __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=<optimized out>, abstime=0x0, clockid=0, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x55b246aac3c0, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=<optimized out>) at ./nptl/futex-internal.c:139
+#3  0x00007f74db6f0bdf in do_futex_wait (sem=sem@entry=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:111
+#4  0x00007f74db6f0c78 in __new_sem_wait_slow64 (sem=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:183
+#5  0x000055b24327eb9a in threadpool<http_conn>::run() ()
+#6  0x000055b24327ee5e in threadpool<http_conn>::worker(void*) ()
+#7  0x00007f74db6e8ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#8  0x00007f74db77a8d0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 3 (Thread 0x7f74cae17640 (LWP 133046) "server-a57-o2-v"):
+#0  __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=<optimized out>, abstime=0x0, clockid=0, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x55b246aac3c0, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=<optimized out>) at ./nptl/futex-internal.c:139
+#3  0x00007f74db6f0bdf in do_futex_wait (sem=sem@entry=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:111
+#4  0x00007f74db6f0c78 in __new_sem_wait_slow64 (sem=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:183
+#5  0x000055b24327eb9a in threadpool<http_conn>::run() ()
+#6  0x000055b24327ee5e in threadpool<http_conn>::worker(void*) ()
+#7  0x00007f74db6e8ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#8  0x00007f74db77a8d0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 2 (Thread 0x7f74cb618640 (LWP 133045) "server-a57-o2-v"):
+#0  __futex_abstimed_wait_common64 (private=<optimized out>, cancel=true, abstime=0x0, op=393, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:57
+#1  __futex_abstimed_wait_common (cancel=true, private=<optimized out>, abstime=0x0, clockid=0, expected=0, futex_word=0x55b246aac3c0) at ./nptl/futex-internal.c:87
+#2  __GI___futex_abstimed_wait_cancelable64 (futex_word=futex_word@entry=0x55b246aac3c0, expected=expected@entry=0, clockid=clockid@entry=0, abstime=abstime@entry=0x0, private=<optimized out>) at ./nptl/futex-internal.c:139
+#3  0x00007f74db6f0bdf in do_futex_wait (sem=sem@entry=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:111
+#4  0x00007f74db6f0c78 in __new_sem_wait_slow64 (sem=0x55b246aac3c0, abstime=0x0, clockid=0) at ./nptl/sem_waitcommon.c:183
+#5  0x000055b24327eb9a in threadpool<http_conn>::run() ()
+#6  0x000055b24327ee5e in threadpool<http_conn>::worker(void*) ()
+#7  0x00007f74db6e8ac3 in start_thread (arg=<optimized out>) at ./nptl/pthread_create.c:442
+#8  0x00007f74db77a8d0 in clone3 () at ../sysdeps/unix/sysv/linux/x86_64/clone3.S:81
+
+Thread 1 (Thread 0x7f74daf9b740 (LWP 133041) "server-a57-o2-v"):
+#0  0x00007f74db779eae in epoll_wait (epfd=12, events=0x7fff29a7072c, maxevents=10000, timeout=-1) at ../sysdeps/unix/sysv/linux/epoll_wait.c:30
+#1  0x000055b24327e28c in WebServer::eventLoop() ()
+#2  0x000055b243275999 in main ()
+[Inferior 1 (process 133041) detached]

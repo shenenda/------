@@ -1,0 +1,201 @@
+000000000000fb46 <WebServer::dealwithread(int)>:
+    fb46:	endbr64
+    fb4a:	push   %rbp
+    fb4b:	mov    %rsp,%rbp
+    fb4e:	push   %rbx
+    fb4f:	sub    $0x28,%rsp
+    fb53:	mov    %rdi,-0x28(%rbp)
+    fb57:	mov    %esi,-0x2c(%rbp)
+    fb5a:	mov    -0x28(%rbp),%rax
+    fb5e:	mov    0x1d580(%rax),%rdx
+    fb65:	mov    -0x2c(%rbp),%eax
+    fb68:	cltq
+    fb6a:	shl    $0x5,%rax
+    fb6e:	add    %rdx,%rax
+    fb71:	mov    0x18(%rax),%rax
+    fb75:	mov    %rax,-0x18(%rbp)
+    fb79:	mov    -0x28(%rbp),%rax
+    fb7d:	mov    0x18(%rax),%eax
+    fb80:	cmp    $0x1,%eax
+    fb83:	jne    fc6a <WebServer::dealwithread(int)+0x124>
+    fb89:	cmpq   $0x0,-0x18(%rbp)
+    fb8e:	je     fba3 <WebServer::dealwithread(int)+0x5d>
+    fb90:	mov    -0x18(%rbp),%rdx
+    fb94:	mov    -0x28(%rbp),%rax
+    fb98:	mov    %rdx,%rsi
+    fb9b:	mov    %rax,%rdi
+    fb9e:	call   f61c <WebServer::adjust_timer(util_timer*)>
+    fba3:	mov    -0x28(%rbp),%rax
+    fba7:	mov    0xa0(%rax),%rax
+    fbae:	mov    -0x28(%rbp),%rdx
+    fbb2:	mov    0x28(%rdx),%rcx
+    fbb6:	mov    -0x2c(%rbp),%edx
+    fbb9:	movslq %edx,%rdx
+    fbbc:	imul   $0xf78,%rdx,%rdx
+    fbc3:	add    %rdx,%rcx
+    fbc6:	mov    $0x0,%edx
+    fbcb:	mov    %rcx,%rsi
+    fbce:	mov    %rax,%rdi
+    fbd1:	call   107d0 <threadpool<http_conn>::append(http_conn*, int)>
+    fbd6:	mov    -0x28(%rbp),%rax
+    fbda:	mov    0x28(%rax),%rdx
+    fbde:	mov    -0x2c(%rbp),%eax
+    fbe1:	cltq
+    fbe3:	imul   $0xf78,%rax,%rax
+    fbea:	add    %rdx,%rax
+    fbed:	mov    0x4(%rax),%eax
+    fbf0:	cmp    $0x1,%eax
+    fbf3:	jne    fbd6 <WebServer::dealwithread(int)+0x90>
+    fbf5:	mov    -0x28(%rbp),%rax
+    fbf9:	mov    0x28(%rax),%rdx
+    fbfd:	mov    -0x2c(%rbp),%eax
+    fc00:	cltq
+    fc02:	imul   $0xf78,%rax,%rax
+    fc09:	add    %rdx,%rax
+    fc0c:	mov    (%rax),%eax
+    fc0e:	cmp    $0x1,%eax
+    fc11:	jne    fc46 <WebServer::dealwithread(int)+0x100>
+    fc13:	mov    -0x2c(%rbp),%edx
+    fc16:	mov    -0x18(%rbp),%rcx
+    fc1a:	mov    -0x28(%rbp),%rax
+    fc1e:	mov    %rcx,%rsi
+    fc21:	mov    %rax,%rdi
+    fc24:	call   f6b8 <WebServer::deal_timer(util_timer*, int)>
+    fc29:	mov    -0x28(%rbp),%rax
+    fc2d:	mov    0x28(%rax),%rdx
+    fc31:	mov    -0x2c(%rbp),%eax
+    fc34:	cltq
+    fc36:	imul   $0xf78,%rax,%rax
+    fc3d:	add    %rdx,%rax
+    fc40:	movl   $0x0,(%rax)
+    fc46:	mov    -0x28(%rbp),%rax
+    fc4a:	mov    0x28(%rax),%rdx
+    fc4e:	mov    -0x2c(%rbp),%eax
+    fc51:	cltq
+    fc53:	imul   $0xf78,%rax,%rax
+    fc5a:	add    %rdx,%rax
+    fc5d:	movl   $0x0,0x4(%rax)
+    fc64:	nop
+    fc65:	jmp    fd64 <WebServer::dealwithread(int)+0x21e>
+    fc6a:	mov    -0x28(%rbp),%rax
+    fc6e:	mov    0x28(%rax),%rdx
+    fc72:	mov    -0x2c(%rbp),%eax
+    fc75:	cltq
+    fc77:	imul   $0xf78,%rax,%rax
+    fc7e:	add    %rdx,%rax
+    fc81:	mov    %rax,%rdi
+    fc84:	call   6f36 <http_conn::read_once()>
+    fc89:	test   %al,%al
+    fc8b:	je     fd4e <WebServer::dealwithread(int)+0x208>
+    fc91:	call   8ff1 <Log::get_instance()>
+    fc96:	mov    %rax,%rdi
+    fc99:	call   90a0 <Log::get_close_log() const>
+    fc9e:	test   %eax,%eax
+    fca0:	sete   %al
+    fca3:	test   %al,%al
+    fca5:	je     fd04 <WebServer::dealwithread(int)+0x1be>
+    fca7:	call   8ff1 <Log::get_instance()>
+    fcac:	mov    %rax,%rbx
+    fcaf:	mov    -0x28(%rbp),%rax
+    fcb3:	mov    0x28(%rax),%rdx
+
+000000000000fd6c <WebServer::dealwithwrite(int)>:
+    fd6c:	endbr64
+    fd70:	push   %rbp
+    fd71:	mov    %rsp,%rbp
+    fd74:	push   %rbx
+    fd75:	sub    $0x28,%rsp
+    fd79:	mov    %rdi,-0x28(%rbp)
+    fd7d:	mov    %esi,-0x2c(%rbp)
+    fd80:	mov    -0x28(%rbp),%rax
+    fd84:	mov    0x1d580(%rax),%rdx
+    fd8b:	mov    -0x2c(%rbp),%eax
+    fd8e:	cltq
+    fd90:	shl    $0x5,%rax
+    fd94:	add    %rdx,%rax
+    fd97:	mov    0x18(%rax),%rax
+    fd9b:	mov    %rax,-0x18(%rbp)
+    fd9f:	mov    -0x28(%rbp),%rax
+    fda3:	mov    0x18(%rax),%eax
+    fda6:	cmp    $0x1,%eax
+    fda9:	jne    fe90 <WebServer::dealwithwrite(int)+0x124>
+    fdaf:	cmpq   $0x0,-0x18(%rbp)
+    fdb4:	je     fdc9 <WebServer::dealwithwrite(int)+0x5d>
+    fdb6:	mov    -0x18(%rbp),%rdx
+    fdba:	mov    -0x28(%rbp),%rax
+    fdbe:	mov    %rdx,%rsi
+    fdc1:	mov    %rax,%rdi
+    fdc4:	call   f61c <WebServer::adjust_timer(util_timer*)>
+    fdc9:	mov    -0x28(%rbp),%rax
+    fdcd:	mov    0xa0(%rax),%rax
+    fdd4:	mov    -0x28(%rbp),%rdx
+    fdd8:	mov    0x28(%rdx),%rcx
+    fddc:	mov    -0x2c(%rbp),%edx
+    fddf:	movslq %edx,%rdx
+    fde2:	imul   $0xf78,%rdx,%rdx
+    fde9:	add    %rdx,%rcx
+    fdec:	mov    $0x1,%edx
+    fdf1:	mov    %rcx,%rsi
+    fdf4:	mov    %rax,%rdi
+    fdf7:	call   107d0 <threadpool<http_conn>::append(http_conn*, int)>
+    fdfc:	mov    -0x28(%rbp),%rax
+    fe00:	mov    0x28(%rax),%rdx
+    fe04:	mov    -0x2c(%rbp),%eax
+    fe07:	cltq
+    fe09:	imul   $0xf78,%rax,%rax
+    fe10:	add    %rdx,%rax
+    fe13:	mov    0x4(%rax),%eax
+    fe16:	cmp    $0x1,%eax
+    fe19:	jne    fdfc <WebServer::dealwithwrite(int)+0x90>
+    fe1b:	mov    -0x28(%rbp),%rax
+    fe1f:	mov    0x28(%rax),%rdx
+    fe23:	mov    -0x2c(%rbp),%eax
+    fe26:	cltq
+    fe28:	imul   $0xf78,%rax,%rax
+    fe2f:	add    %rdx,%rax
+    fe32:	mov    (%rax),%eax
+    fe34:	cmp    $0x1,%eax
+    fe37:	jne    fe6c <WebServer::dealwithwrite(int)+0x100>
+    fe39:	mov    -0x2c(%rbp),%edx
+    fe3c:	mov    -0x18(%rbp),%rcx
+    fe40:	mov    -0x28(%rbp),%rax
+    fe44:	mov    %rcx,%rsi
+    fe47:	mov    %rax,%rdi
+    fe4a:	call   f6b8 <WebServer::deal_timer(util_timer*, int)>
+    fe4f:	mov    -0x28(%rbp),%rax
+    fe53:	mov    0x28(%rax),%rdx
+    fe57:	mov    -0x2c(%rbp),%eax
+    fe5a:	cltq
+    fe5c:	imul   $0xf78,%rax,%rax
+    fe63:	add    %rdx,%rax
+    fe66:	movl   $0x0,(%rax)
+    fe6c:	mov    -0x28(%rbp),%rax
+    fe70:	mov    0x28(%rax),%rdx
+    fe74:	mov    -0x2c(%rbp),%eax
+    fe77:	cltq
+    fe79:	imul   $0xf78,%rax,%rax
+    fe80:	add    %rdx,%rax
+    fe83:	movl   $0x0,0x4(%rax)
+    fe8a:	nop
+    fe8b:	jmp    ff5c <WebServer::dealwithwrite(int)+0x1f0>
+    fe90:	mov    -0x28(%rbp),%rax
+    fe94:	mov    0x28(%rax),%rdx
+    fe98:	mov    -0x2c(%rbp),%eax
+    fe9b:	cltq
+    fe9d:	imul   $0xf78,%rax,%rax
+    fea4:	add    %rdx,%rax
+    fea7:	mov    %rax,%rdi
+    feaa:	call   8432 <http_conn::write()>
+    feaf:	test   %al,%al
+    feb1:	je     ff46 <WebServer::dealwithwrite(int)+0x1da>
+    feb7:	call   8ff1 <Log::get_instance()>
+    febc:	mov    %rax,%rdi
+    febf:	call   90a0 <Log::get_close_log() const>
+    fec4:	test   %eax,%eax
+    fec6:	sete   %al
+    fec9:	test   %al,%al
+    fecb:	je     ff2a <WebServer::dealwithwrite(int)+0x1be>
+    fecd:	call   8ff1 <Log::get_instance()>
+    fed2:	mov    %rax,%rbx
+    fed5:	mov    -0x28(%rbp),%rax
+    fed9:	mov    0x28(%rax),%rdx

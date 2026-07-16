@@ -1,0 +1,10 @@
+label=a57-o2-atomic
+binary=/tmp/a57-atomic-o2-forensics/baseline-atomic/server-a57-o2-atomic
+size_bytes=103744
+mtime=2026-07-16 08:27:16.111957787 +0800
+/tmp/a57-atomic-o2-forensics/baseline-atomic/server-a57-o2-atomic: ELF 64-bit LSB pie executable, x86-64, version 1 (GNU/Linux), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, BuildID[sha1]=d8a08cffde557656003532eddec96d6b34208948, for GNU/Linux 3.2.0, not stripped
+    Build ID: d8a08cffde557656003532eddec96d6b34208948
+
+Displaying notes found in: .note.ABI-tag
+  Owner                Data size 	Description
+7b7c213a9f0db1a5de98a86a60e49f469c05f0e9936a8447dca40464ad68d5f1  /tmp/a57-atomic-o2-forensics/baseline-atomic/server-a57-o2-atomic
